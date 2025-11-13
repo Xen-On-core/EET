@@ -58,7 +58,7 @@ const_expr::const_expr(prod *p, sqltype *type_constraint)
         int hour = dx(24) - 1; // 0 - 23
         int minute = dx(60) - 1; // 0 - 59
         int second = dx(60) - 1; // 0 -59
-        
+
         if (scope->schema->target_dbms == "clickhouse") {
             expr = "makeDateTime(";
             expr = expr + to_string(year) + ", ";

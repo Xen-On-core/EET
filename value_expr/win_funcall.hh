@@ -13,7 +13,7 @@ struct win_funcall : value_expr
 
     virtual void equivalent_transform();
     virtual void back_transform();
-    
+
     virtual void set_component_id(int &id);
     virtual bool get_component_from_id(int id, shared_ptr<value_expr> &component);
     virtual bool set_component_from_id(int id, shared_ptr<value_expr> component);

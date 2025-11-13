@@ -111,7 +111,7 @@ void in_query::equivalent_transform()
         auto check_equal = make_shared<comparison_op>(this, eq, lhs, selected); // selected = lhs
         auto new_predicate = make_shared<bool_term>(this, false, check_equal, tmp1->search); // (selected = lhs) and old_predicate
         auto new_query = make_shared<query_spec>(*tmp1);
-        
+
         new_query->search = new_predicate;
         auto exists_expr = make_shared<exists_predicate>(this, new_query);
 

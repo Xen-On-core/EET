@@ -11,6 +11,6 @@ struct win_func_using_exist_win : value_expr
     shared_ptr<win_funcall> aggregate;
     string exist_window;
     virtual void accept(prod_visitor *v);
-    // cannot transfer aggregate, othervwise aggregate will 
+    // cannot transfer aggregate, othervwise aggregate will
     // become other value_expr, which cause syntax error
 };

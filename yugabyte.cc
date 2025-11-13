@@ -44,7 +44,7 @@ static bool is_double(string myString, long double& result) {
     istringstream iss(myString);
     iss >> noskipws >> result; // noskipws considers leading whitespace invalid
     // Check the entire string was consumed and if either failbit or badbit is set
-    return iss.eof() && !iss.fail(); 
+    return iss.eof() && !iss.fail();
 }
 
 static string process_number_string(string str)
@@ -140,11 +140,11 @@ static bool is_suitable_proc(string proc_name)
 {
     if (proc_name.find("pg_") != string::npos)
         return false;
-    
+
     if (proc_name == "clock_timestamp"
         || proc_name == "inet_client_port"
         || proc_name == "now"
-        || proc_name.find("random") != string::npos 
+        || proc_name.find("random") != string::npos
         || proc_name == "statement_timestamp"
         || proc_name == "timeofday"
         || (proc_name.find("has_") != string::npos && proc_name.find("_privilege") != string::npos)
@@ -157,7 +157,7 @@ static bool is_suitable_proc(string proc_name)
         // || proc_name == "has_schema_privilege"
         // || proc_name == "current_setting"
         || proc_name == "set_config"
-        || proc_name.find("current") != string::npos 
+        || proc_name.find("current") != string::npos
         || proc_name == "row_security_active"
         || proc_name == "string_agg" // may generate random-ordered string
         || proc_name == "regr_slope" // may give undetermine result when the slope close to infinite or 0
@@ -176,7 +176,7 @@ bool schema_yugabyte::is_consistent_with_basic_type(sqltype *rvalue)
         texttype->consistent(rvalue) ||
         datetype->consistent(rvalue))
         return true;
-    
+
     return false;
 }
 
@@ -229,7 +229,7 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
             name2type.count("numeric") > 0 &&
             name2type.count("text") > 0 &&
             name2type.count("timestamp") > 0) {
-        
+
         booltype = name2type["bool"];
         inttype = name2type["int4"];
         realtype = name2type["numeric"];
@@ -259,7 +259,7 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
     supported_join_op.push_back("left outer");
     supported_join_op.push_back("right outer");
     supported_join_op.push_back("full outer");
-    
+
     // Setting Configuration
     supported_setting["yb_enable_optimizer_statistics"] = vector<string>({"on", "off"});
     supported_setting["yb_enable_base_scans_cost_model"] = vector<string>({"on", "off"});
@@ -311,12 +311,12 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
 
         if (no_catalog && ((schema == "pg_catalog") || (schema == "information_schema")))
             continue;
-        
+
         tables.push_back(table(table_name, schema,
                 ((insertable == "YES") ? true : false),
                 ((table_type == "BASE TABLE") ? true : false)));
     }
-    PQclear(res);    
+    PQclear(res);
 
     // cerr << "Loading columns and constraints...";
     for (auto t = tables.begin(); t != tables.end(); ++t) {
@@ -339,7 +339,7 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
                 continue;
 
             auto column_type = oid2type[atol(PQgetvalue(res, i, 1))];
-            column c(column_name, column_type);            
+            column c(column_name, column_type);
             t->columns().push_back(c);
         }
         PQclear(res);
@@ -391,15 +391,15 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
     for (auto& o:static_op_vec) {
         register_operator(o);
     }
-    
+
     // cerr << "Loading routines...";
     if (has_routines == false) {
-        string load_routines_sql = 
+        string load_routines_sql =
             "select (select nspname from pg_namespace where oid = pronamespace), oid, prorettype, proname "
             "from pg_proc "
             "where prorettype::regtype::text not in ('event_trigger', 'trigger', 'opaque', 'internal') "
                 "and not (proretset or " + procedure_is_aggregate + " or " + procedure_is_window + ") ;";
-        
+
         res = pqexec_handle_error(conn, load_routines_sql);
         row_num = PQntuples(res);
         for (int i = 0; i < row_num; i++) {
@@ -414,7 +414,7 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
 
             if (!is_suitable_proc(proname))
                 continue;
-            
+
             routine proc(r_name, oid_str, prorettype, proname);
             static_routine_vec.push_back(proc);
         }
@@ -468,7 +468,7 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
 
     // cerr << "Loading aggregates...";
     if (has_aggregates == false) {
-        string load_aggregates_sql = 
+        string load_aggregates_sql =
             "select (select nspname from pg_namespace where oid = pronamespace), oid, prorettype, proname "
             "from pg_proc "
                 "where prorettype::regtype::text not in ('event_trigger', 'trigger', 'opaque', 'internal') "
@@ -513,7 +513,7 @@ schema_yugabyte::schema_yugabyte(string db, unsigned int port, string host, bool
             q = q + " where oid = " + proc.specific_name + ";";
             res = pqexec_handle_error(conn, q);
             row_num = PQntuples(res);
-            
+
             bool has_not_basic_type = false;
             vector<yugabyte_type *> para_vec;
             for (int i = 0; i < row_num; i++) {
@@ -565,7 +565,7 @@ schema_yugabyte::~schema_yugabyte()
 }
 
 yugabyte_connection::yugabyte_connection(string db, unsigned int port, string host)
-{    
+{
     test_db = db;
     test_port = port;
     host_addr = host;
@@ -573,13 +573,13 @@ yugabyte_connection::yugabyte_connection(string db, unsigned int port, string ho
     conn = PQsetdbLogin(host_addr.c_str(), to_string(port).c_str(), NULL, NULL, db.c_str(), YUGABYTE_ROLE, NULL);
     if (PQstatus(conn) == CONNECTION_OK)
         return; // succeed
-    
+
     string err = PQerrorMessage(conn);
     if (err.find("does not exist") == string::npos) {
         cerr << "[CONNECTION FAIL]  " << err << " in " << debug_info << endl;
         throw runtime_error("[CONNECTION FAIL] " + err + " in " + debug_info);
     }
-    
+
     cerr << "try to create database testdb" << endl;
     conn = PQsetdbLogin(host_addr.c_str(), to_string(test_port).c_str(), NULL, NULL, "yugabyte", YUGABYTE_ROLE, NULL);
     if (PQstatus(conn) != CONNECTION_OK) {
@@ -624,9 +624,9 @@ dut_yugabyte::dut_yugabyte(string db, unsigned int port, string host)
 static bool is_expected_error(string error)
 {
     if (error.find("violates not-null constraint") != string::npos
-        || error.find("duplicate key value violates unique constraint") != string::npos 
-        || error.find("encoding conversion from UTF8 to ASCII not supported") != string::npos 
-        || error.find("cannot take logarithm of zero") != string::npos 
+        || error.find("duplicate key value violates unique constraint") != string::npos
+        || error.find("encoding conversion from UTF8 to ASCII not supported") != string::npos
+        || error.find("cannot take logarithm of zero") != string::npos
         || error.find("invalid regular expression: parentheses") != string::npos
         || error.find("invalid normalization form") != string::npos
         || error.find("precision must be between") != string::npos
@@ -699,8 +699,8 @@ static bool is_expected_error(string error)
     return false;
 }
 
-void dut_yugabyte::test(const string &stmt, 
-                    vector<vector<string>>* output, 
+void dut_yugabyte::test(const string &stmt,
+                    vector<vector<string>>* output,
                     int* affected_row_num,
                     vector<string>* env_setting_stmts)
 {
@@ -721,13 +721,13 @@ void dut_yugabyte::test(const string &stmt,
             }
         }
     }
-    
+
     auto res = PQexec(conn, stmt.c_str());
     auto status = PQresultStatus(res);
     if (status != PGRES_COMMAND_OK && status != PGRES_TUPLES_OK) {
         string err = PQerrorMessage(conn);
         PQclear(res);
-        
+
         // clear the current result
         while (res != NULL) {
             res = PQgetResult(conn);
@@ -742,7 +742,7 @@ void dut_yugabyte::test(const string &stmt,
 
     if (affected_row_num) {
         auto char_num = PQcmdTuples(res);
-        if (char_num != NULL) 
+        if (char_num != NULL)
             *affected_row_num = atoi(char_num);
         else
             *affected_row_num = 0;
@@ -769,12 +769,12 @@ void dut_yugabyte::test(const string &stmt,
     }
     PQclear(res);
 
-    return;    
+    return;
 }
 
 void dut_yugabyte::reset(void)
 {
-    if (conn) 
+    if (conn)
         PQfinish(conn);
     conn = PQsetdbLogin(host_addr.c_str(), to_string(test_port).c_str(), NULL, NULL, "yugabyte", YUGABYTE_ROLE, NULL);
     if (PQstatus(conn) != CONNECTION_OK) {
@@ -815,13 +815,13 @@ void dut_yugabyte::reset(void)
 void dut_yugabyte::backup(void)
 {
     // do nothing as we can use DB_RECORD_FILE
-    
-    // string pgsql_dump = "/usr/local/pgsql/bin/pg_dump -p " + 
+
+    // string pgsql_dump = "/usr/local/pgsql/bin/pg_dump -p " +
     //                     to_string(test_port) + " " + test_db + " > " + YUGABYTE_BK_FILE(test_db);
     // int ret = system(pgsql_dump.c_str());
     // if (ret != 0) {
     //     std::cerr << "backup fail \nLocation: " + debug_info << endl;
-    //     throw std::runtime_error("backup fail \nLocation: " + debug_info); 
+    //     throw std::runtime_error("backup fail \nLocation: " + debug_info);
     // }
 }
 

@@ -17,7 +17,7 @@ vector<string> process_dbrecord_into_sqls(string db_record_file)
         auto new_off = stmts.find(seperate_label, old_off);
         if (new_off == string::npos)
             break;
-        
+
         auto each_sql = stmts.substr(old_off, new_off - old_off); // not include the seperate_label
         old_off = new_off + seperate_label.size();
 

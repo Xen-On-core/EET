@@ -1,6 +1,6 @@
 #include "qcn_select_tester.hh"
 
-qcn_select_tester::qcn_select_tester(dbms_info& info, shared_ptr<schema> schema) 
+qcn_select_tester::qcn_select_tester(dbms_info& info, shared_ptr<schema> schema)
 : qcn_tester(info, schema){
 
     while (1) {
@@ -8,12 +8,12 @@ qcn_select_tester::qcn_select_tester(dbms_info& info, shared_ptr<schema> schema)
             initial_scope.new_stmt();
             auto select_query = make_shared<query_spec>((struct prod *)0, &initial_scope);
             query = select_query;
-            
+
             ostringstream s;
             select_query->out(s);
             original_query = s.str();
             s.clear();
-        
+
             execute_query(original_query, original_query_result);
             if (original_query_result.size() > MAX_PROCESS_ROW_NUM)
                 continue;
@@ -22,7 +22,7 @@ qcn_select_tester::qcn_select_tester(dbms_info& info, shared_ptr<schema> schema)
         }
         break;
     }
-    
+
     skip_one_original_execution = true;
 }
 
@@ -35,11 +35,11 @@ void qcn_select_tester::eq_transform_query(shared_ptr<query_spec> select_query)
                 selected_value->equivalent_transform();
         }
     }
-    
+
     // transfrom the from clause
     auto ref_table = select_query->from_clause->reflist.back();
     eq_transform_table_ref(ref_table);
-    
+
     // transform the where clause
     select_query->search->equivalent_transform();
 
@@ -58,11 +58,11 @@ void qcn_select_tester::back_transform_query(shared_ptr<query_spec> select_query
                 selected_value->back_transform();
         }
     }
-    
+
     // back transfrom the from clause
     auto ref_table = select_query->from_clause->reflist.back();
     back_transform_table_ref(ref_table);
-    
+
     // back transform the where clause
     select_query->search->back_transform();
 
@@ -94,7 +94,7 @@ bool qcn_select_tester::get_comp_from_id_query(shared_ptr<query_spec> select_que
 {
     if (schema::target_dbms != "clickhouse" && !select_query->has_group) {
         for (auto selected_value : select_query->select_list->value_exprs) {
-            GET_COMPONENT_FROM_ID_CHILD(id, ret_comp, selected_value); 
+            GET_COMPONENT_FROM_ID_CHILD(id, ret_comp, selected_value);
         }
     }
 
@@ -102,7 +102,7 @@ bool qcn_select_tester::get_comp_from_id_query(shared_ptr<query_spec> select_que
     if (get_comp_from_id_table(ref_table, id, ret_comp))
         return true;
 
-    GET_COMPONENT_FROM_ID_CHILD(id, ret_comp, select_query->search); 
+    GET_COMPONENT_FROM_ID_CHILD(id, ret_comp, select_query->search);
 
     if (select_query->has_group) {
         GET_COMPONENT_FROM_ID_CHILD(id, ret_comp, select_query->group_clause->having_cond_search);
@@ -122,7 +122,7 @@ bool qcn_select_tester::set_comp_from_id_query(shared_ptr<query_spec> select_que
     auto ref_table = select_query->from_clause->reflist.back();
     if (set_comp_from_id_table(ref_table, id, comp))
         return true;
-    
+
     auto bool_comp = dynamic_pointer_cast<bool_expr>(comp);
     if (bool_comp) {
         SET_COMPONENT_FROM_ID_CHILD(id, bool_comp, select_query->search);
@@ -236,11 +236,11 @@ void qcn_select_tester::initial_origin_and_qit_query()
     query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     auto select_query = dynamic_pointer_cast<query_spec>(query);
     assert(select_query);
     eq_transform_query(select_query);
-    
+
     ostringstream s2;
     select_query->out(s2);
     qit_query = s2.str();
@@ -281,7 +281,7 @@ bool qcn_select_tester::qcn_test_without_initialization()
 
     if (qit_query_result != original_query_result) {
         cerr << "validating the bug ... " << endl;
-        
+
         try {
             execute_query(original_query, original_query_result);
             execute_query(qit_query, qit_query_result);
@@ -306,13 +306,13 @@ bool qcn_select_tester::qcn_test_without_initialization()
 void qcn_select_tester::save_testcase(string dir)
 {
     struct stat buffer;
-    if (stat(dir.c_str(), &buffer) != 0) 
+    if (stat(dir.c_str(), &buffer) != 0)
         make_dir_error_exit(dir);
-    
+
     save_backup_file(dir, tested_dbms_info);
     save_query(dir, "select_origin.sql", original_query);
     save_query(dir, "select_qit.sql", qit_query);
-    save_queries(dir, "env_stmts.sql", env_setting_stmts);    
+    save_queries(dir, "env_stmts.sql", env_setting_stmts);
 }
 
 void qcn_select_tester::minimize_testcase()
@@ -320,18 +320,18 @@ void qcn_select_tester::minimize_testcase()
     // just simplify predicate for now
     auto select_query = dynamic_pointer_cast<query_spec>(query);
     int count = 0;
-    
+
     set_compid_for_query(select_query, count);
-    
+
     cerr << "number of predicate component: " << count << endl;
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(select_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(select_query, id, tmp_comp) == false)
             continue;
 
         cout << "-----------------" << endl;
         cout << "replacing id " << id << endl;
-        
+
         ostringstream sb;
         tmp_comp->out(sb);
         cout << "before, query component: " << sb.str() << endl;
@@ -359,15 +359,15 @@ void qcn_select_tester::minimize_testcase()
     select_query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     eq_transform_query(select_query);
     // now cte_query is qit query
-    
+
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(select_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(select_query, id, tmp_comp) == false)
             continue;
-        
+
         if (tmp_comp->is_transformed == false)
             continue;
 
@@ -377,9 +377,9 @@ void qcn_select_tester::minimize_testcase()
         tmp_comp->out(sb);
         cout << "before, qit component: " << sb.str() << endl;
         sb.clear();
-        
+
         tmp_comp->back_transform();
-        
+
         ostringstream s;
         query->out(s);
         qit_query = s.str();

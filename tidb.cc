@@ -39,14 +39,14 @@ tidb_connection::tidb_connection(string db, unsigned int port)
 {
     test_db = db;
     test_port = port;
-    
+
     if (!mysql_init(&mysql))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in tidb_connection!");
 
     // password null: blank (empty) password field
-    if (mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0)) 
+    if (mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0))
         return; // success
-    
+
     string err = mysql_error(&mysql);
     if (!regex_match(err, e_unknown_database))
         throw std::runtime_error("BUG!!!" + string(mysql_error(&mysql)) + " in tidb_connection!");
@@ -55,7 +55,7 @@ tidb_connection::tidb_connection(string db, unsigned int port)
     cerr << test_db + " does not exist, use default db" << endl;
     if (!mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, NULL, port, NULL, 0))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in tidb_connection!");
-    
+
     cerr << "create database " + test_db << endl;
     string create_sql = "create database " + test_db + "; ";
     if (mysql_real_query(&mysql, create_sql.c_str(), create_sql.size()))
@@ -83,10 +83,10 @@ schema_tidb::schema_tidb(string db, unsigned int port)
     string get_table_query = "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES \
         WHERE TABLE_SCHEMA='" + db + "' AND \
               TABLE_TYPE='BASE TABLE' ORDER BY 1;";
-    
+
     if (mysql_real_query(&mysql, get_table_query.c_str(), get_table_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in schema_tidb (load table list)!");
-    
+
     auto result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", true, true);
@@ -100,7 +100,7 @@ schema_tidb::schema_tidb(string db, unsigned int port)
         where table_schema='" + db + "' order by 1;";
     if (mysql_real_query(&mysql, get_view_query.c_str(), get_view_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in schema_tidb (load view list)!");
-    
+
     result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", false, false);
@@ -267,7 +267,7 @@ schema_tidb::schema_tidb(string db, unsigned int port)
     FUNC1(SIGN, inttype, realtype);
     FUNC1(SIGN, inttype, inttype);
     FUNC1(CRC32, inttype, texttype);
-    
+
     FUNC2(instr, inttype, texttype, texttype);
     FUNC2(round, realtype, realtype, inttype);
     FUNC2(substr, texttype, texttype, inttype);
@@ -352,10 +352,10 @@ void schema_tidb::update_schema()
     string get_table_query = "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES \
         WHERE TABLE_SCHEMA='" + test_db + "' AND \
               TABLE_TYPE='BASE TABLE' ORDER BY 1;";
-    
+
     if (mysql_real_query(&mysql, get_table_query.c_str(), get_table_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in schema_tidb (load table list)!");
-    
+
     auto result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", true, true);
@@ -369,7 +369,7 @@ void schema_tidb::update_schema()
         where table_schema='" + test_db + "' order by 1;";
     if (mysql_real_query(&mysql, get_view_query.c_str(), get_view_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in schema_tidb (load view list)!");
-    
+
     result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", false, false);
@@ -418,7 +418,7 @@ dut_tidb::dut_tidb(string db, unsigned int port)
     string stmt = "SET MAX_EXECUTION_TIME = 6000;"; // 6 seconds
     if (mysql_real_query(&mysql, stmt.c_str(), stmt.size())) {
         string err = mysql_error(&mysql);
-        throw runtime_error(err + " in dut_tidb::dut_tidb"); 
+        throw runtime_error(err + " in dut_tidb::dut_tidb");
     }
 }
 
@@ -426,7 +426,7 @@ static bool is_double(string myString, long double& result) {
     istringstream iss(myString);
     iss >> noskipws >> result; // noskipws considers leading whitespace invalid
     // Check the entire string was consumed and if either failbit or badbit is set
-    return iss.eof() && !iss.fail(); 
+    return iss.eof() && !iss.fail();
 }
 
 static vector<string> hash_a_row(vector<string>& row)
@@ -452,8 +452,8 @@ static vector<string> hash_a_row(vector<string>& row)
     return hased_row;
 }
 
-void dut_tidb::test(const std::string &stmt, 
-    vector<vector<string>>* output, 
+void dut_tidb::test(const std::string &stmt,
+    vector<vector<string>>* output,
     int* affected_row_num,
     vector<string>* env_setting_stmts)
 {
@@ -467,20 +467,20 @@ void dut_tidb::test(const std::string &stmt,
             return;
         }
         if (regex_match(err, e_crash)) {
-            throw runtime_error("BUG!!! " + err + " in mysql::test"); 
+            throw runtime_error("BUG!!! " + err + " in mysql::test");
         }
         string prefix = "tidb test expected error:";
-        if (regex_match(err, e_dup_entry) 
-            || regex_match(err, e_large_results) 
-            || regex_match(err, e_timeout) 
+        if (regex_match(err, e_dup_entry)
+            || regex_match(err, e_large_results)
+            || regex_match(err, e_timeout)
             || regex_match(err, e_col_ambiguous)
-            || regex_match(err, e_truncated) 
+            || regex_match(err, e_truncated)
             || regex_match(err, e_division_zero)
-            || regex_match(err, e_unknown_col) 
+            || regex_match(err, e_unknown_col)
             || regex_match(err, e_incorrect_args)
-            || regex_match(err, e_out_of_range) 
+            || regex_match(err, e_out_of_range)
             || regex_match(err, e_win_context)
-            || regex_match(err, e_view_reference) 
+            || regex_match(err, e_view_reference)
             || regex_match(err, e_context_cancel)
             || regex_match(err, e_string_convert)
             || regex_match(err, e_idx_oor)
@@ -503,7 +503,7 @@ void dut_tidb::test(const std::string &stmt,
             throw runtime_error(prefix + err);
         }
         cerr << "the unexpected error [" << err << "]" << endl;
-        throw runtime_error(err + " in dut_tidb::test"); 
+        throw runtime_error(err + " in dut_tidb::test");
     }
 
     if (affected_row_num)
@@ -568,7 +568,7 @@ void dut_tidb::backup(void)
     int ret = system(mysql_dump.c_str());
     if (ret != 0) {
         cerr << "backup fail in dut_tidb::backup!!" << endl;
-        throw std::runtime_error("backup fail in dut_tidb::backup"); 
+        throw std::runtime_error("backup fail in dut_tidb::backup");
     }
 }
 
@@ -576,16 +576,16 @@ void dut_tidb::reset_to_backup(void)
 {
     reset();
     string bk_file = "/tmp/" + test_db + "_bk.sql";
-    if (access(bk_file.c_str(), F_OK ) == -1) 
+    if (access(bk_file.c_str(), F_OK ) == -1)
         return;
-    
+
     mysql_close(&mysql);
-    
+
     string mysql_source = "mysql -h 127.0.0.1 -P " + to_string(test_port) + " -u root -D " + test_db + " < " + bk_file;
-    if (system(mysql_source.c_str()) == -1) 
+    if (system(mysql_source.c_str()) == -1)
         throw std::runtime_error(string("system() error, return -1") + " in dut_tidb::reset_to_backup!");
 
-    if (!mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0)) 
+    if (!mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in dut_tidb::reset_to_backup!");
 }
 
@@ -658,7 +658,7 @@ pid_t dut_tidb::fork_db_server()
     //     server_argv[i++] = (char *)"playground";
     //     server_argv[i++] = NULL;
     //     execv(server_argv[0], server_argv);
-    //     cerr << "fork tidb server fail in dut_tidb::fork_db_server" << endl; 
+    //     cerr << "fork tidb server fail in dut_tidb::fork_db_server" << endl;
     // }
     // sleep(30);
     // cout << "server pid: " << child << endl;

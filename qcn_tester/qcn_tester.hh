@@ -38,13 +38,13 @@ struct qcn_tester {
     virtual void initial_origin_and_qit_query() = 0;
 
     void execute_query(string query, multiset<row_output>& result);
-    void execute_get_changed_results(string query, string table_name, 
+    void execute_get_changed_results(string query, string table_name,
                             multiset<row_output>& result, bool is_after);
     void print_origin_qit_difference();
     void print_stmt_output(multiset<row_output>& stmt_output);
-    
+
     bool simplify_qit_component_and_test(int component_id, shared_ptr<value_expr> target_expr);
-    
+
     qcn_tester(dbms_info& info, shared_ptr<schema> schema);
 };
 

@@ -5,15 +5,15 @@
 
 struct qcn_select_tester : qcn_tester {
     bool skip_one_original_execution;
-    
+
     virtual bool qcn_test();
     virtual bool qcn_test_without_initialization();
     virtual void save_testcase(string dir);
     virtual void minimize_testcase();
     virtual void initial_origin_and_qit_query();
-    
+
     qcn_select_tester(dbms_info& info, shared_ptr<schema> schema);
-    
+
     static void eq_transform_table_ref(shared_ptr<table_ref> table);
     static void back_transform_table_ref(shared_ptr<table_ref> table);
     static void eq_transform_query(shared_ptr<query_spec> select_query);

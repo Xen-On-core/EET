@@ -7,7 +7,7 @@ void win_func_using_exist_win::out(std::ostream &out)
         out_eq_value_expr(out);
         return;
     }
-    
+
     out << *aggregate << " over " + exist_window;
 }
 

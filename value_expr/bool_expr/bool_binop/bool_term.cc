@@ -20,7 +20,7 @@ bool_term::bool_term(prod *p, bool is_or,
 void bool_term::out(ostream &out)
 {
     OUTPUT_EQ_BOOL_EXPR(out);
-    
+
     if (has_equal_expr == false)
     {
         out << "(" << *lhs << ") ";
@@ -90,7 +90,7 @@ bool bool_term::set_component_from_id(int id, shared_ptr<value_expr> component)
             SET_COMPONENT_FROM_ID_CHILD(id, bool_value, equal_expr);
         else
         {
-            if (equal_expr->set_component_from_id(id, bool_value)) 
+            if (equal_expr->set_component_from_id(id, bool_value))
                 return true;
         }
     }

@@ -1,6 +1,6 @@
 #!/bin/sh -v
 
-if [ $# -ne 4 ]; then 
+if [ $# -ne 4 ]; then
     echo "tested SQL file: "$1
     echo "targeted table: "$2
     echo "test database: "$3

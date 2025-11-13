@@ -5,7 +5,7 @@
 struct exists_predicate : bool_expr
 {
     struct scope myscope;
-    
+
     shared_ptr<prod> subquery;
     shared_ptr<bool_expr> eq_exer;
 

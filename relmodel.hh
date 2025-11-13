@@ -45,7 +45,7 @@ struct routine {
         : specific_name(specific_name), schema(schema), restype(data_type), name(name) {
         assert(data_type);
     }
-    
+
     virtual string ident() {
         if (schema.size())
             return schema + "." + name;
@@ -94,8 +94,8 @@ struct table : named_relation {
         schema(schema),
         is_insertable(insertable),
         is_base_table(base_table) { }
-    virtual string ident() { 
-        // return schema + "." + name; 
+    virtual string ident() {
+        // return schema + "." + name;
         return name; }
     virtual ~table() { };
 };

@@ -48,8 +48,8 @@ struct schema_tidb : schema, tidb_connection {
 };
 
 struct dut_tidb : dut_base, tidb_connection {
-    virtual void test(const std::string &stmt, 
-        vector<vector<string>>* output = NULL, 
+    virtual void test(const std::string &stmt,
+        vector<vector<string>>* output = NULL,
         int* affected_row_num = NULL,
         vector<string>* env_setting_stmts = NULL);
     virtual void reset(void);
@@ -59,13 +59,13 @@ struct dut_tidb : dut_base, tidb_connection {
 
     // must be static, because db server may crash, and thus cannot connect again
     static int save_backup_file(string testdb, string path);
-    
+
     virtual string commit_stmt();
     virtual string abort_stmt();
     virtual string begin_stmt();
 
     static pid_t fork_db_server();
-    
+
     virtual void get_content(vector<string>& tables_name, map<string, vector<vector<string>>>& content);
     dut_tidb(string db, unsigned int port);
 };

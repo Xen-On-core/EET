@@ -84,7 +84,7 @@ void gen_stmts_for_one_txn(shared_ptr<schema> &db_schema,
 bool compare_output(vector<vector<vector<string>>>& a_output,
                     vector<vector<vector<string>>>& b_output);
 
-bool compare_content(map<string, vector<vector<string>>>&a_content, 
+bool compare_content(map<string, vector<vector<string>>>&a_content,
                      map<string, vector<vector<string>>>&b_content);
 
 pid_t fork_db_server(dbms_info& d_info);
@@ -101,7 +101,7 @@ void user_signal(int signal);
 void dut_reset(dbms_info& d_info);
 void dut_backup(dbms_info& d_info);
 void dut_reset_to_backup(dbms_info& d_info);
-void dut_get_content(dbms_info& d_info, 
+void dut_get_content(dbms_info& d_info,
                     map<string, vector<vector<string>>>& content);
 
 int generate_database(dbms_info& d_info, int t_num);

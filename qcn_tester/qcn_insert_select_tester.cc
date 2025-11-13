@@ -1,7 +1,7 @@
 #include "qcn_insert_select_tester.hh"
 #include "qcn_select_tester.hh"
 
-qcn_insert_select_tester::qcn_insert_select_tester(dbms_info& info, shared_ptr<schema> schema) 
+qcn_insert_select_tester::qcn_insert_select_tester(dbms_info& info, shared_ptr<schema> schema)
 : qcn_tester(info, schema){
 
     while (1) {
@@ -10,12 +10,12 @@ qcn_insert_select_tester::qcn_insert_select_tester(dbms_info& info, shared_ptr<s
             auto insert_select_query = make_shared<insert_select_stmt>((struct prod *)0, &initial_scope);
             query = insert_select_query;
             table_name = insert_select_query->victim->ident();
-            
+
             ostringstream s;
             insert_select_query->out(s);
             original_query = s.str();
             s.clear();
-        
+
             execute_get_changed_results(original_query, table_name, original_query_result, true);
             if (original_query_result.size() > MAX_PROCESS_ROW_NUM)
                 continue;
@@ -24,7 +24,7 @@ qcn_insert_select_tester::qcn_insert_select_tester(dbms_info& info, shared_ptr<s
         }
         break;
     }
-    
+
     skip_one_original_execution = true;
 }
 
@@ -44,11 +44,11 @@ void qcn_insert_select_tester::initial_origin_and_qit_query()
     query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     auto insert_select_query = dynamic_pointer_cast<insert_select_stmt>(query);
     assert(insert_select_query);
     eq_transform_query(insert_select_query);
-    
+
     ostringstream s2;
     insert_select_query->out(s2);
     qit_query = s2.str();
@@ -112,9 +112,9 @@ bool qcn_insert_select_tester::qcn_test_without_initialization()
 void qcn_insert_select_tester::save_testcase(string dir)
 {
     struct stat buffer;
-    if (stat(dir.c_str(), &buffer) != 0) 
+    if (stat(dir.c_str(), &buffer) != 0)
         make_dir_error_exit(dir);
-    
+
     save_backup_file(dir, tested_dbms_info);
     save_query(dir, "insert_select_origin.sql", original_query);
     save_query(dir, "insert_select_qit.sql", qit_query);

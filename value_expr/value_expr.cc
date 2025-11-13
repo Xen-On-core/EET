@@ -77,7 +77,7 @@ void value_expr::equivalent_transform()
 
     int choice = d9();
     if (choice <= 3)
-    {   
+    {
         // case when true then this_expr else random_value end
         // true <=> (rand_bool) or (not rand_bool) or (rand_bool is null)
         auto rand_or_not_rand = make_shared<bool_term>(this, true, random_bool, not_rand);
@@ -93,8 +93,8 @@ void value_expr::equivalent_transform()
     }
     else {
         // should unmark, otherwise in printed_expr, share_this will print *eq_value_expr, which has not been set
-        unmark_transformed(); 
-        
+        unmark_transformed();
+
         // case when random_bool then non_eq_trans_expr else this_expr end, or
         // case when random_bool then this_expr else non_eq_trans_expr end
         auto non_eq_trans_expr = make_shared<printed_expr>(this, share_this);
@@ -102,7 +102,7 @@ void value_expr::equivalent_transform()
             eq_value_expr = make_shared<case_expr>(this, random_bool, non_eq_trans_expr, share_this);
         else
             eq_value_expr = make_shared<case_expr>(this, random_bool, share_this, non_eq_trans_expr);
-        
+
         mark_transformed();
     }
 }

@@ -66,7 +66,7 @@ void bool_expr::equivalent_transform()
 
     bool is_case_true = d6() > 3 ? true : false;
     if (is_case_true)
-    {   
+    {
         // case when true then this_expr else random_value end
         // true <=> (rand_bool) or (not rand_bool) or (rand_bool is null)
         auto rand_or_not_rand = make_shared<bool_term>(this, true, random_bool, not_rand);
@@ -74,7 +74,7 @@ void bool_expr::equivalent_transform()
         eq_bool_expr = make_shared<bool_term>(this, false, truth_value, share_this);
     }
     else
-    {   
+    {
         // case when false then random_value else this_expr end
         // false <=> (rand_bool) and (not rand_bool) and (rand_bool is not null)
         auto rand_and_not_rand = make_shared<bool_term>(this, false, random_bool, not_rand);

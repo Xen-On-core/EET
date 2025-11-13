@@ -30,15 +30,15 @@ struct schema_mysql : schema, mysql_connection {
 };
 
 struct dut_mysql : dut_base, mysql_connection {
-    virtual void test(const string &stmt, 
-        vector<vector<string>>* output = NULL, 
+    virtual void test(const string &stmt,
+        vector<vector<string>>* output = NULL,
         int* affected_row_num = NULL,
         vector<string>* env_setting_stmts = NULL);
     virtual void reset(void);
 
     virtual void backup(void);
     virtual void reset_to_backup(void);
-    
+
     virtual string commit_stmt();
     virtual string abort_stmt();
     virtual string begin_stmt();

@@ -109,7 +109,7 @@ where (t5.pkey >= t5.vkey) <> (t5.c30 = (
 **eet.sql**
 ```sql
 --- select 0 row
-select * from t5 
+select * from t5
 where (t5.pkey >= t5.vkey) <> (t5.c30 = (
     select
         t5.c29 as c_0
@@ -119,11 +119,11 @@ where (t5.pkey >= t5.vkey) <> (t5.c30 = (
           on (ref_0.c10 = ref_1.c2))
       where ((case when (((ref_0.c10 like 'z~%')
                 and (not (ref_0.c10 like 'z~%')))
-                and ((ref_0.c10 like 'z~%') is not null)) 
+                and ((ref_0.c10 like 'z~%') is not null))
             then t5.c28 else t5.c28 end)
            = (case when (((ref_1.c2 not like '_%%')
                 and (not (ref_1.c2 not like '_%%')))
-                and ((ref_1.c2 not like '_%%') is not null)) 
+                and ((ref_1.c2 not like '_%%') is not null))
             then t5.c29 else t5.c27 end))
       order by c_0 desc limit 1));
 ```
@@ -176,8 +176,8 @@ make -j
 
 | Option | Description |
 |----------|----------|
-| `--mysql-db` | Target MySQL database | 
-| `--mysql-port` | MySQL server port number | 
+| `--mysql-db` | Target MySQL database |
+| `--mysql-port` | MySQL server port number |
 | `--postgres-db` | Target PostgreSQL database |
 | `--postgres-port` | PostgreSQL server port number |
 | `--sqlite` | Target SQLite database |

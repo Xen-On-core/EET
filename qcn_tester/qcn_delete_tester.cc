@@ -1,6 +1,6 @@
 #include "qcn_delete_tester.hh"
 
-qcn_delete_tester::qcn_delete_tester(dbms_info& info, shared_ptr<schema> schema) 
+qcn_delete_tester::qcn_delete_tester(dbms_info& info, shared_ptr<schema> schema)
 : qcn_tester(info, schema){
 
     while (1) {
@@ -9,12 +9,12 @@ qcn_delete_tester::qcn_delete_tester(dbms_info& info, shared_ptr<schema> schema)
             auto delete_query = make_shared<delete_stmt>((struct prod *)0, &initial_scope);
             query = delete_query;
             table_name = delete_query->victim->ident();
-            
+
             ostringstream s;
             delete_query->out(s);
             original_query = s.str();
             s.clear();
-        
+
             execute_get_changed_results(original_query, table_name, original_query_result, false);
             if (original_query_result.size() > MAX_PROCESS_ROW_NUM)
                 continue;
@@ -23,7 +23,7 @@ qcn_delete_tester::qcn_delete_tester(dbms_info& info, shared_ptr<schema> schema)
         }
         break;
     }
-    
+
     skip_one_original_execution = true;
 }
 
@@ -45,11 +45,11 @@ void qcn_delete_tester::initial_origin_and_qit_query()
     query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     auto delete_query = dynamic_pointer_cast<delete_stmt>(query);
     assert(delete_query);
     eq_transform_query(delete_query);
-    
+
     ostringstream s2;
     delete_query->out(s2);
     qit_query = s2.str();
@@ -98,7 +98,7 @@ bool qcn_delete_tester::qcn_test_without_initialization()
             cerr << "error when validating: " << e.what() << endl;
             return true;
         }
-        
+
         if (qit_query_result != original_query_result) {
             cerr << "qit results are different from original results, find logical bug!!" << endl;
             cerr << "original_query_result: " << original_query_result.size() << endl;
@@ -115,9 +115,9 @@ bool qcn_delete_tester::qcn_test_without_initialization()
 void qcn_delete_tester::save_testcase(string dir)
 {
     struct stat buffer;
-    if (stat(dir.c_str(), &buffer) != 0) 
+    if (stat(dir.c_str(), &buffer) != 0)
         make_dir_error_exit(dir);
-    
+
     save_backup_file(dir, tested_dbms_info);
     save_query(dir, "delete_origin.sql", original_query);
     save_query(dir, "delete_qit.sql", qit_query);
@@ -129,13 +129,13 @@ void qcn_delete_tester::minimize_testcase()
     // just simplify predicate for now
     auto delete_query = dynamic_pointer_cast<delete_stmt>(query);
     int count = 0;
-    
+
     set_compid_for_query(delete_query, count);
-    
+
     cerr << "number of predicate component: " << count << endl;
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(delete_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(delete_query, id, tmp_comp) == false)
             continue;
 
         cout << "-----------------" << endl;
@@ -163,27 +163,27 @@ void qcn_delete_tester::minimize_testcase()
     delete_query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     eq_transform_query(delete_query);
     // now cte_query is qit query
-    
+
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(delete_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(delete_query, id, tmp_comp) == false)
             continue;
-        
+
         if (tmp_comp->is_transformed == false)
             continue;
-        
+
         cout << "-----------------" << endl;
         cout << "back transaform id: " << id << endl;
         ostringstream sb;
         tmp_comp->out(sb);
         cout << "before, qit component: " << sb.str() << endl;
         sb.clear();
-        
+
         tmp_comp->back_transform();
-        
+
         ostringstream s;
         query->out(s);
         qit_query = s.str();
@@ -224,7 +224,7 @@ bool qcn_delete_tester::get_comp_from_id_query(shared_ptr<delete_stmt> delete_qu
 bool qcn_delete_tester::set_comp_from_id_query(shared_ptr<delete_stmt> delete_query, int id, shared_ptr<value_expr> comp)
 {
     auto bool_comp = dynamic_pointer_cast<bool_expr>(comp);
-    if (bool_comp) 
+    if (bool_comp)
         SET_COMPONENT_FROM_ID_CHILD(id, bool_comp, delete_query->search);
     else {
         if (delete_query->search->set_component_from_id(id, comp))

@@ -39,7 +39,7 @@ static bool is_double(string myString, long double& result) {
     istringstream iss(myString);
     iss >> noskipws >> result; // noskipws considers leading whitespace invalid
     // Check the entire string was consumed and if either failbit or badbit is set
-    return iss.eof() && !iss.fail(); 
+    return iss.eof() && !iss.fail();
 }
 
 static string process_number_string(string str)
@@ -135,16 +135,16 @@ static bool is_suitable_proc(string proc_name)
 {
     if (proc_name.find("pg_") != string::npos)
         return false;
-    
+
     // cockroach timestamp related functions are not well supported  by eet
     // can comment these if these functions are well-supported later
     if (proc_name.find("time") != string::npos)
         return false;
-    
+
     if (proc_name == "clock_timestamp"
         || proc_name == "inet_client_port"
         || proc_name == "now"
-        || proc_name.find("random") != string::npos 
+        || proc_name.find("random") != string::npos
         || proc_name == "statement_timestamp"
         || proc_name == "timeofday"
         || (proc_name.find("has_") != string::npos && proc_name.find("_privilege") != string::npos)
@@ -157,7 +157,7 @@ static bool is_suitable_proc(string proc_name)
         // || proc_name == "has_schema_privilege"
         // || proc_name == "current_setting"
         || proc_name == "set_config"
-        || proc_name.find("current") != string::npos 
+        || proc_name.find("current") != string::npos
         || proc_name == "row_security_active"
         || proc_name == "string_agg" // may generate random-ordered string
         || proc_name == "regr_slope" // may give undetermine result when the slope close to infinite or 0
@@ -176,7 +176,7 @@ bool schema_cockroach::is_consistent_with_basic_type(sqltype *rvalue)
         texttype->consistent(rvalue) ||
         datetype->consistent(rvalue))
         return true;
-    
+
     return false;
 }
 
@@ -232,7 +232,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
             name2type.count("numeric") > 0 &&
             name2type.count("text") > 0 &&
             name2type.count("timestamp") > 0) {
-        
+
         booltype = name2type["bool"];
         inttype = name2type["int4"];
         realtype = name2type["numeric"];
@@ -262,7 +262,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
     supported_join_op.push_back("left outer");
     supported_join_op.push_back("right outer");
     supported_join_op.push_back("full outer");
-    
+
     // // Planner Method Configuration
     // supported_setting["enable_async_append"] = vector<string>({"on", "off"});
     // supported_setting["enable_bitmapscan"] = vector<string>({"on", "off"});
@@ -310,18 +310,18 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
         string table_type(PQgetvalue(res, i, 3));
 
         if (no_catalog) {
-            if (schema == "pg_catalog" || 
-                    schema == "information_schema" || 
+            if (schema == "pg_catalog" ||
+                    schema == "information_schema" ||
                     schema == "pg_extension" ||
                     schema == "crdb_internal")
                 continue;
-        } 
-        
+        }
+
         tables.push_back(table(table_name, schema,
                 ((insertable == "YES") ? true : false),
                 ((table_type == "BASE TABLE") ? true : false)));
     }
-    PQclear(res);    
+    PQclear(res);
 
     // cerr << "Loading columns and constraints...";
     for (auto t = tables.begin(); t != tables.end(); ++t) {
@@ -341,7 +341,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
 
             if (column_name == "rowid") // rowid cannot be inserted
                 continue;
-            
+
             auto column_oid = atol(PQgetvalue(res, i, 1));
             if (oid2type.count(column_oid) == 0) {
                 auto err = "[COCKROACH] table " + t->name + " has column with unknown type";
@@ -350,7 +350,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
             }
             auto column_type = oid2type[atol(PQgetvalue(res, i, 1))];
 
-            column c(column_name, column_type);            
+            column c(column_name, column_type);
             t->columns().push_back(c);
         }
         PQclear(res);
@@ -388,12 +388,12 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
             // sometimes oid2type miss some weird types, so just skeep it
             if (oid2type.count(left_oid) == 0 || oid2type.count(right_oid) == 0 || oid2type.count(result_oid) == 0)
                 continue;
-            
+
             auto op_left_type = oid2type[left_oid];
             auto op_right_type = oid2type[right_oid];
             auto op_result_type = oid2type[result_oid];
 
-            // cerr << "op_name: " << op_name << ", op_left_type: " << op_left_type->name << 
+            // cerr << "op_name: " << op_name << ", op_left_type: " << op_left_type->name <<
             //         ", op_right_type: " << op_right_type->name << ", op_result_type: " << op_result_type->name;
 
             // only consider basic type
@@ -418,15 +418,15 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
     }
 
     // abort();
-    
+
     // cerr << "Loading routines...";
     if (has_routines == false) {
-        string load_routines_sql = 
+        string load_routines_sql =
             "select (select nspname from pg_namespace where oid = pronamespace), oid, prorettype, proname "
             "from pg_proc "
             "where prorettype::regtype::text not in ('event_trigger', 'trigger', 'opaque', 'internal') "
                 "and not (proretset or " + procedure_is_aggregate + " or " + procedure_is_window + ") ;";
-        
+
         res = pqexec_handle_error(conn, load_routines_sql);
         row_num = PQntuples(res);
         for (int i = 0; i < row_num; i++) {
@@ -449,7 +449,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
 
             if (!is_suitable_proc(proname))
                 continue;
-            
+
             routine proc(r_name, oid_str, prorettype, proname);
             static_routine_vec.push_back(proc);
         }
@@ -515,7 +515,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
 
     // cerr << "Loading aggregates...";
     if (has_aggregates == false) {
-        string load_aggregates_sql = 
+        string load_aggregates_sql =
             "select (select nspname from pg_namespace where oid = pronamespace), oid, prorettype, proname "
             "from pg_proc "
                 "where prorettype::regtype::text not in ('event_trigger', 'trigger', 'opaque', 'internal') "
@@ -530,7 +530,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
         for (int i = 0; i < row_num; i++) {
             string nspname(PQgetvalue(res, i, 0));
             string oid_str(PQgetvalue(res, i, 1));
-            
+
             // oid2type can miss some types
             auto proretoid = atol(PQgetvalue(res, i, 2));
             if (oid2type.count(proretoid) == 0)
@@ -566,7 +566,7 @@ schema_cockroach::schema_cockroach(string db, unsigned int port, string host, bo
             q = q + " where oid = " + proc.specific_name + ";";
             res = pqexec_handle_error(conn, q);
             row_num = PQntuples(res);
-            
+
             bool has_not_basic_type = false;
             vector<cockroach_type *> para_vec;
             for (int i = 0; i < row_num; i++) {
@@ -623,7 +623,7 @@ schema_cockroach::~schema_cockroach()
 }
 
 cockroach_connection::cockroach_connection(string db, unsigned int port, string host)
-{    
+{
     test_db = db;
     test_port = port;
     host_addr = host;
@@ -631,13 +631,13 @@ cockroach_connection::cockroach_connection(string db, unsigned int port, string 
     conn = PQsetdbLogin(host_addr.c_str(), to_string(port).c_str(), NULL, NULL, db.c_str(), NULL, NULL);
     if (PQstatus(conn) == CONNECTION_OK)
         return; // succeed
-    
+
     string err = PQerrorMessage(conn);
     if (err.find("does not exist") == string::npos) {
         cerr << "[CONNECTION FAIL]  " << err << " in " << debug_info << endl;
         throw runtime_error("[CONNECTION FAIL] " + err + " in " + debug_info);
     }
-    
+
     cerr << "try to create database testdb" << endl;
     conn = PQsetdbLogin(host_addr.c_str(), to_string(test_port).c_str(), NULL, NULL, "defaultdb", NULL, NULL);
     if (PQstatus(conn) != CONNECTION_OK) {
@@ -682,9 +682,9 @@ dut_cockroach::dut_cockroach(string db, unsigned int port, string host)
 static bool is_expected_error(string error)
 {
     if (error.find("violates not-null constraint") != string::npos
-        || error.find("duplicate key value violates unique constraint") != string::npos 
-        || error.find("encoding conversion from UTF8 to ASCII not supported") != string::npos 
-        || error.find("cannot take logarithm of zero") != string::npos 
+        || error.find("duplicate key value violates unique constraint") != string::npos
+        || error.find("encoding conversion from UTF8 to ASCII not supported") != string::npos
+        || error.find("cannot take logarithm of zero") != string::npos
         || error.find("invalid regular expression: parentheses") != string::npos
         || error.find("invalid normalization form") != string::npos
         || error.find("precision must be between") != string::npos
@@ -768,8 +768,8 @@ static bool is_expected_error(string error)
     return false;
 }
 
-void dut_cockroach::test(const string &stmt, 
-                    vector<vector<string>>* output, 
+void dut_cockroach::test(const string &stmt,
+                    vector<vector<string>>* output,
                     int* affected_row_num,
                     vector<string>* env_setting_stmts)
 {
@@ -790,13 +790,13 @@ void dut_cockroach::test(const string &stmt,
             }
         }
     }
-    
+
     auto res = PQexec(conn, stmt.c_str());
     auto status = PQresultStatus(res);
     if (status != PGRES_COMMAND_OK && status != PGRES_TUPLES_OK) {
         string err = PQerrorMessage(conn);
         PQclear(res);
-        
+
         // clear the current result
         while (res != NULL) {
             res = PQgetResult(conn);
@@ -811,7 +811,7 @@ void dut_cockroach::test(const string &stmt,
 
     if (affected_row_num) {
         auto char_num = PQcmdTuples(res);
-        if (char_num != NULL) 
+        if (char_num != NULL)
             *affected_row_num = atoi(char_num);
         else
             *affected_row_num = 0;
@@ -838,12 +838,12 @@ void dut_cockroach::test(const string &stmt,
     }
     PQclear(res);
 
-    return;    
+    return;
 }
 
 void dut_cockroach::reset(void)
 {
-    if (conn) 
+    if (conn)
         PQfinish(conn);
     conn = PQsetdbLogin(host_addr.c_str(), to_string(test_port).c_str(), NULL, NULL, "defaultdb", NULL, NULL);
     if (PQstatus(conn) != CONNECTION_OK) {
@@ -894,13 +894,13 @@ void dut_cockroach::reset(void)
 void dut_cockroach::backup(void)
 {
     // do nothing as we can use DB_RECORD_FILE
-    
-    // string pgsql_dump = "/usr/local/pgsql/bin/pg_dump -p " + 
+
+    // string pgsql_dump = "/usr/local/pgsql/bin/pg_dump -p " +
     //                     to_string(test_port) + " " + test_db + " > " + BK_FILE(test_db);
     // int ret = system(pgsql_dump.c_str());
     // if (ret != 0) {
     //     std::cerr << "backup fail \nLocation: " + debug_info << endl;
-    //     throw std::runtime_error("backup fail \nLocation: " + debug_info); 
+    //     throw std::runtime_error("backup fail \nLocation: " + debug_info);
     // }
 }
 

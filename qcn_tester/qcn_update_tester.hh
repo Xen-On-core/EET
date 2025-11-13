@@ -12,7 +12,7 @@ struct qcn_update_tester : qcn_tester {
     virtual void save_testcase(string dir);
     virtual void minimize_testcase();
     virtual void initial_origin_and_qit_query();
-    
+
     qcn_update_tester(dbms_info& info, shared_ptr<schema> schema);
 
     static void eq_transform_query(shared_ptr<update_stmt> update_query);

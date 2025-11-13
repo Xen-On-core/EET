@@ -9,7 +9,7 @@ RUN apt-get install -y vim cmake curl wget git
 
 # prepare for mysql
 RUN apt-get install -y libssl-dev g++ libncurses5-dev
-RUN apt-get install -y pkg-config bison 
+RUN apt-get install -y pkg-config bison
 RUN useradd -ms /bin/bash mysql
 USER mysql
 WORKDIR /home/mysql

@@ -96,7 +96,7 @@ void win_funcall::equivalent_transform()
 
     if (schema::target_dbms == "clickhouse")
         return;
-    
+
     for (auto &parm : parms)
         parm->equivalent_transform();
 }
@@ -104,10 +104,10 @@ void win_funcall::equivalent_transform()
 void win_funcall::back_transform()
 {
     value_expr::back_transform();
-    
+
     if (schema::target_dbms == "clickhouse")
         return;
-    
+
     for (auto &parm : parms)
         parm->back_transform();
 }

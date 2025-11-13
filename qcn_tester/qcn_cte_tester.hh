@@ -5,13 +5,13 @@
 
 struct qcn_cte_tester : qcn_tester {
     bool skip_one_original_execution;
-    
+
     virtual bool qcn_test();
     virtual bool qcn_test_without_initialization();
     virtual void save_testcase(string dir);
     virtual void minimize_testcase();
     virtual void initial_origin_and_qit_query();
-    
+
     qcn_cte_tester(dbms_info& info, shared_ptr<schema> schema);
 
     static void eq_transform_query(shared_ptr<common_table_expression> cte_query);

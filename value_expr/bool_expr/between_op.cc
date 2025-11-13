@@ -56,7 +56,7 @@ void between_op::back_transform()
 void between_op::out(ostream &o)
 {
     OUTPUT_EQ_BOOL_EXPR(o);
-    
+
     if (use_eq_expr == false)
         o << "(" << *mhs << ") between (" << *lhs << ") and (" << *rhs << ")";
     else

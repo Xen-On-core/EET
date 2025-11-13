@@ -53,12 +53,12 @@ struct schema_sqlite : schema, sqlite_connection {
 };
 
 struct dut_sqlite : dut_base, sqlite_connection {
-    virtual void test(const std::string &stmt, 
-        vector<vector<string>>* output = NULL, 
+    virtual void test(const std::string &stmt,
+        vector<vector<string>>* output = NULL,
         int* affected_row_num = NULL,
         vector<string>* env_setting_stmts = NULL);
     virtual void reset(void);
-    
+
     virtual void backup(void);
     virtual void reset_to_backup(void);
     static int save_backup_file(string path, string db_name);
@@ -67,7 +67,7 @@ struct dut_sqlite : dut_base, sqlite_connection {
     virtual string abort_stmt();
     virtual string begin_stmt();
     virtual string get_process_id();
-    
+
     virtual void get_content(vector<string>& tables_name, map<string, vector<vector<string>>>& content);
     dut_sqlite(std::string &conninfo);
 };

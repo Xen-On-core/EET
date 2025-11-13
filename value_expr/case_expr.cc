@@ -37,7 +37,7 @@ void case_expr::out(std::ostream &out)
         out_eq_value_expr(out);
         return;
     }
-    
+
     out << "case when (" << *condition;
     out << ") then (" << *true_expr;
     out << ") else (" << *false_expr;

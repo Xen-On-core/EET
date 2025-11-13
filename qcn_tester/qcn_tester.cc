@@ -27,7 +27,7 @@ shared_ptr<bool_expr> qcn_tester::bool_expr_extractor(shared_ptr<bool_expr> expr
     return dynamic_pointer_cast<bool_expr>(true_and_expr->rhs);
 }
 
-void qcn_tester::execute_get_changed_results(string query, string table_name, 
+void qcn_tester::execute_get_changed_results(string query, string table_name,
                                         multiset<row_output>& result, bool is_after)
 {
     vector<string> table_names;
@@ -43,13 +43,13 @@ void qcn_tester::execute_get_changed_results(string query, string table_name,
         dut->reset_to_backup();
         table_names.push_back(table_name);
         dut->get_content(table_names, prev_content);
-        for (auto& item : prev_content[table_name]) 
+        for (auto& item : prev_content[table_name])
             prev_result.insert(item);
-    
+
         dut->test(query, NULL, NULL, &env_setting_stmts);
 
         dut->get_content(table_names, new_content);
-        for (auto& item : new_content[table_name]) 
+        for (auto& item : new_content[table_name])
             new_result.insert(item);
         dbms_execution_ms = dbms_execution_ms + (get_cur_time_ms() - execute_start);
 
@@ -102,10 +102,10 @@ void qcn_tester::execute_query(string query, multiset<row_output>& result)
         auto dut = dut_setup(tested_dbms_info);
         dut->test(query, &tmp_output, NULL, &env_setting_stmts);
         dbms_execution_ms = dbms_execution_ms + (get_cur_time_ms() - execute_start);
-        
+
     } catch(exception& e) {
         dbms_execution_ms = dbms_execution_ms + (get_cur_time_ms() - execute_start);
-        
+
         string err = e.what();
         bool expected = (err.find("expected error") != string::npos);
         if (!expected && ignore_crash == false) {
@@ -124,7 +124,7 @@ void qcn_tester::execute_query(string query, multiset<row_output>& result)
         }
         throw;
     }
-    
+
     for (auto& item:tmp_output)
         result.insert(item);
 }
@@ -148,14 +148,14 @@ qcn_tester::qcn_tester(dbms_info& info, shared_ptr<schema> schema) {
         set_statement_2->value = "on";
         env_setting_stmts.push_back(print_stmt_to_string(set_statement_2));
     }
-    
-    while (!generated_db_schema->supported_setting.empty() && 
-            env_setting_stmts.size() < generated_db_schema->supported_setting.size() && 
+
+    while (!generated_db_schema->supported_setting.empty() &&
+            env_setting_stmts.size() < generated_db_schema->supported_setting.size() &&
             d6() <= 4) {
         initial_scope.new_stmt();
         auto set_statement = make_shared<set_stmt>((struct prod *)0, &initial_scope);
         // don't test set statement, developer should guarentee it is always valid
-        
+
         bool has_this_setting = false;
         for (auto stmt:env_setting_stmts) {
             if (stmt.find(set_statement->parm) != string::npos) {

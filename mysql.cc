@@ -69,7 +69,7 @@ static bool is_double(string myString, long double& result) {
     istringstream iss(myString);
     iss >> noskipws >> result; // noskipws considers leading whitespace invalid
     // Check the entire string was consumed and if either failbit or badbit is set
-    return iss.eof() && !iss.fail(); 
+    return iss.eof() && !iss.fail();
 }
 
 static string process_an_item(string& item)
@@ -99,14 +99,14 @@ mysql_connection::mysql_connection(string db, unsigned int port)
 {
     test_db = db;
     test_port = port;
-    
+
     if (!mysql_init(&mysql))
         throw std::runtime_error(string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
 
     // password null: blank (empty) password field
-    if (mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0)) 
+    if (mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0))
         return; // success
-    
+
     string err = mysql_error(&mysql);
     if (!regex_match(err, e_unknown_database))
         throw std::runtime_error("BUG!!!" + string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
@@ -115,7 +115,7 @@ mysql_connection::mysql_connection(string db, unsigned int port)
     cerr << test_db + " does not exist, use default db" << endl;
     if (!mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, NULL, port, NULL, 0))
         throw std::runtime_error(string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
-    
+
     cerr << "create database " + test_db << endl;
     string create_sql = "create database " + test_db + "; ";
     if (mysql_real_query(&mysql, create_sql.c_str(), create_sql.size())) {
@@ -130,10 +130,10 @@ mysql_connection::mysql_connection(string db, unsigned int port)
             throw runtime_error("error removing directory.");
 
         cerr << "directory removed, create the database again" << endl;
-        if (mysql_real_query(&mysql, create_sql.c_str(), create_sql.size())) 
+        if (mysql_real_query(&mysql, create_sql.c_str(), create_sql.size()))
             throw runtime_error(string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
     }
-        
+
     auto res = mysql_store_result(&mysql);
     mysql_free_result(res);
 
@@ -157,10 +157,10 @@ schema_mysql::schema_mysql(string db, unsigned int port)
     string get_table_query = "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES \
         WHERE TABLE_SCHEMA='" + db + "' AND \
               TABLE_TYPE='BASE TABLE' ORDER BY 1;";
-    
+
     if (mysql_real_query(&mysql, get_table_query.c_str(), get_table_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
-    
+
     auto result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", true, true);
@@ -173,7 +173,7 @@ schema_mysql::schema_mysql(string db, unsigned int port)
         where table_schema='" + db + "' order by 1;";
     if (mysql_real_query(&mysql, get_view_query.c_str(), get_view_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
-    
+
     result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", false, false);
@@ -218,7 +218,7 @@ schema_mysql::schema_mysql(string db, unsigned int port)
     realtype = sqltype::get("double");
     texttype = sqltype::get("varchar(200)");
     datetype = sqltype::get("DATETIME");
-    
+
     compound_operators.push_back("union distinct");
     compound_operators.push_back("union all");
 
@@ -390,8 +390,8 @@ schema_mysql::schema_mysql(string db, unsigned int port)
     FUNC3(SUBSTRING, texttype, texttype, inttype, inttype);
     FUNC1(TO_BASE64, texttype, texttype);
     FUNC1(TRIM, texttype, texttype);
-    // FUNC1(UNHEX, texttype, texttype); it return a binary string, which is a different type from string. 
-    // In case when, string and binary string will become binary string 
+    // FUNC1(UNHEX, texttype, texttype); it return a binary string, which is a different type from string.
+    // In case when, string and binary string will become binary string
     FUNC1(UPPER, texttype, texttype);
     FUNC2(STRCMP, inttype, texttype, texttype);
     // FUNC1(CHAR, texttype, inttype);
@@ -461,10 +461,10 @@ void schema_mysql::update_schema()
     string get_table_query = "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES \
         WHERE TABLE_SCHEMA='" + test_db + "' AND \
               TABLE_TYPE='BASE TABLE' ORDER BY 1;";
-    
+
     if (mysql_real_query(&mysql, get_table_query.c_str(), get_table_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
-    
+
     auto result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", true, true);
@@ -477,7 +477,7 @@ void schema_mysql::update_schema()
         where table_schema='" + test_db + "' order by 1;";
     if (mysql_real_query(&mysql, get_view_query.c_str(), get_view_query.size()))
         throw std::runtime_error(string(mysql_error(&mysql)) + "\nLocation: " + debug_info);
-    
+
     result = mysql_store_result(&mysql);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", false, false);
@@ -542,8 +542,8 @@ bool dut_mysql::check_whether_block(vector<unsigned long>& blocking_tids)
     string get_block_tid = "SELECT blocking_pid FROM sys.innodb_lock_waits where waiting_pid = " + to_string(thread_id) + ";";
     vector<vector<string>> output;
     another_dut.block_test(get_block_tid, &output);
-    
-    bool find_blocked_tid = false; 
+
+    bool find_blocked_tid = false;
     for (int i = 0; i < output.size(); i++) {
         for (int j = 0; j < output[i].size(); j++) {
             auto blocking_tid = stoi(output[i][j]);
@@ -555,8 +555,8 @@ bool dut_mysql::check_whether_block(vector<unsigned long>& blocking_tids)
     return find_blocked_tid;
 }
 
-void dut_mysql::block_test(const string &stmt, 
-    vector<vector<string>>* output, 
+void dut_mysql::block_test(const string &stmt,
+    vector<vector<string>>* output,
     int* affected_row_num)
 {
     if (mysql_real_query(&mysql, stmt.c_str(), stmt.size())) {
@@ -569,20 +569,20 @@ void dut_mysql::block_test(const string &stmt,
             return;
         }
         if (regex_match(err, e_crash)) {
-            throw std::runtime_error("BUG!!! " + err + " in mysql::block_test"); 
+            throw std::runtime_error("BUG!!! " + err + " in mysql::block_test");
         }
         string prefix = "mysql block_test expected error:";
-        if (regex_match(err, e_dup_entry) 
-            || regex_match(err, e_large_results) 
-            || regex_match(err, e_timeout) 
+        if (regex_match(err, e_dup_entry)
+            || regex_match(err, e_large_results)
+            || regex_match(err, e_timeout)
             || regex_match(err, e_col_ambiguous)
-            || regex_match(err, e_truncated) 
+            || regex_match(err, e_truncated)
             || regex_match(err, e_division_zero)
-            || regex_match(err, e_unknown_col) 
+            || regex_match(err, e_unknown_col)
             || regex_match(err, e_incorrect_args)
-            || regex_match(err, e_out_of_range) 
+            || regex_match(err, e_out_of_range)
             || regex_match(err, e_win_context)
-            || regex_match(err, e_view_reference) 
+            || regex_match(err, e_view_reference)
             || regex_match(err, e_context_cancel)
             || regex_match(err, e_string_convert)
             // || regex_match(err, e_idx_oor)
@@ -612,7 +612,7 @@ void dut_mysql::block_test(const string &stmt,
             throw runtime_error(prefix + err);
         }
 
-        throw std::runtime_error("[" + err + "] in mysql::block_test"); 
+        throw std::runtime_error("[" + err + "] in mysql::block_test");
     }
 
     if (affected_row_num)
@@ -628,7 +628,7 @@ void dut_mysql::block_test(const string &stmt,
             throw runtime_error("mysql block_test/mysql_store_result expected error: " + err);
         }
 
-        throw std::runtime_error("block_test: mysql_store_result fails [" + err + "]\nLocation: " + debug_info); 
+        throw std::runtime_error("block_test: mysql_store_result fails [" + err + "]\nLocation: " + debug_info);
     }
 
     if (output && result) {
@@ -657,8 +657,8 @@ void dut_mysql::block_test(const string &stmt,
     return;
 }
 
-void dut_mysql::test(const string &stmt, 
-    vector<vector<string>>* output, 
+void dut_mysql::test(const string &stmt,
+    vector<vector<string>>* output,
     int* affected_row_num,
     vector<string>* env_setting_stmts)
 {
@@ -668,7 +668,7 @@ void dut_mysql::test(const string &stmt,
     net_async_status status;
     if (txn_abort == true) {
         auto tmp_stmt = stmt;
-        if (stmt == "COMMIT;") 
+        if (stmt == "COMMIT;")
             throw std::runtime_error("txn aborted, can only rollback \nLocation: " + debug_info);
         if (stmt == "ROLLBACK;")
             return;
@@ -684,17 +684,17 @@ void dut_mysql::test(const string &stmt,
         has_sent_sql = true;
     }
 
-    if (sent_sql != stmt) 
-        throw std::runtime_error("sent sql stmt changed in " + debug_info + 
+    if (sent_sql != stmt)
+        throw std::runtime_error("sent sql stmt changed in " + debug_info +
             "\nsent_sql: " + sent_sql +
-            "\nstmt: " + stmt); 
+            "\nstmt: " + stmt);
 
     auto begin_time = get_cur_time_ms();
     while (1) {
         status = mysql_real_query_nonblocking(&mysql, stmt.c_str(), stmt.size());
         if (status != NET_ASYNC_NOT_READY)
             break;
-            
+
         auto cur_time = get_cur_time_ms();
         if (cur_time - begin_time >= MYSQL_STMT_BLOCK_MS) {
             vector<unsigned long> blocking_tids;
@@ -704,9 +704,9 @@ void dut_mysql::test(const string &stmt,
                 for (auto blocking_tid:blocking_tids)
                     err_str += "\nblocking_pid->[" + to_string(blocking_tid) + "]<-";
                 err_str += "\nself_pid->[" + get_process_id() + "]<-";
-                throw runtime_error(err_str); 
+                throw runtime_error(err_str);
             }
-                
+
             begin_time = cur_time;
         }
     }
@@ -723,9 +723,9 @@ void dut_mysql::test(const string &stmt,
             test(stmt, output, affected_row_num);
             return;
         }
-        if (err.find("Deadlock found") != string::npos) 
+        if (err.find("Deadlock found") != string::npos)
             txn_abort = true;
-        throw std::runtime_error("NET_ASYNC_ERROR(skipped): " + err + "\nLocation: " + debug_info); 
+        throw std::runtime_error("NET_ASYNC_ERROR(skipped): " + err + "\nLocation: " + debug_info);
     }
 
     if (affected_row_num)
@@ -737,9 +737,9 @@ void dut_mysql::test(const string &stmt,
         has_sent_sql = false;
         sent_sql = "";
         mysql_free_result(result);
-        if (err.find("Deadlock found") != string::npos) 
+        if (err.find("Deadlock found") != string::npos)
             txn_abort = true;
-        throw std::runtime_error("mysql_store_result fails, stmt skipped: " + err + "\nLocation: " + debug_info); 
+        throw std::runtime_error("mysql_store_result fails, stmt skipped: " + err + "\nLocation: " + debug_info);
     }
 
     if (output && result) {
@@ -806,7 +806,7 @@ void dut_mysql::backup(void)
     int ret = system(mysql_dump.c_str());
     if (ret != 0) {
         cerr << "backup fail in dut_tidb::backup!!" << endl;
-        throw std::runtime_error("backup fail in dut_tidb::backup"); 
+        throw std::runtime_error("backup fail in dut_tidb::backup");
     }
 }
 
@@ -814,16 +814,16 @@ void dut_mysql::reset_to_backup(void)
 {
     reset();
     string bk_file = "/tmp/" + test_db + "_bk.sql";
-    if (access(bk_file.c_str(), F_OK ) == -1) 
+    if (access(bk_file.c_str(), F_OK ) == -1)
         return;
-    
+
     mysql_close(&mysql);
-    
+
     string mysql_source = "/usr/local/mysql/bin/mysql -h 127.0.0.1 -P " + to_string(test_port) + " -u root -D " + test_db + " < " + bk_file;
-    if (system(mysql_source.c_str()) == -1) 
+    if (system(mysql_source.c_str()) == -1)
         throw std::runtime_error(string("system() error, return -1") + " in dut_mysql::reset_to_backup!");
 
-    if (!mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0)) 
+    if (!mysql_real_connect(&mysql, "127.0.0.1", "root", NULL, test_db.c_str(), test_port, NULL, 0))
         throw std::runtime_error(string(mysql_error(&mysql)) + " in dut_mysql::reset_to_backup!");
 }
 
@@ -902,9 +902,9 @@ pid_t dut_mysql::fork_db_server()
         server_argv[i++] = (char *)"--user=mysql";
         server_argv[i++] = NULL;
         execv(server_argv[0], server_argv);
-        cerr << "fork mysql server fail \nLocation: " + debug_info << endl; 
+        cerr << "fork mysql server fail \nLocation: " + debug_info << endl;
     }
-    
+
     sleep(3);
     cout << "server pid: " << child << endl;
     return child;

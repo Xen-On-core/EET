@@ -114,7 +114,7 @@ schema_sqlite::schema_sqlite(string &conninfo, bool no_catalog)
 
     if (no_catalog)
         query+= " AND name NOT like 'sqlite_%%'";
-  
+
     version = "SQLite " SQLITE_VERSION " " SQLITE_SOURCE_ID;
 
 //   sqlite3_busy_handler(db, my_sqlite3_busy_handler, 0);
@@ -167,7 +167,7 @@ schema_sqlite::schema_sqlite(string &conninfo, bool no_catalog)
     int start = d100();
     int stop = start + d100();
     int step = d12();
-    string gen_table = "generate_series(" + to_string(start) + ", " + 
+    string gen_table = "generate_series(" + to_string(start) + ", " +
                             to_string(stop) + ", " + to_string(step) + ")";
     table tab(gen_table, "main", false, false);
     column c1("value", sqltype::get("INTEGER"));
@@ -470,7 +470,7 @@ schema_sqlite::schema_sqlite(string &conninfo, bool no_catalog)
     WIN(percent_rank, realtype);
     WIN(cume_dist, realtype);
     WIN1(ntile, inttype, inttype);
-    
+
     WIN1(lag, inttype, inttype);
     WIN1(lag, realtype, realtype);
     WIN1(lag, texttype, texttype);
@@ -478,7 +478,7 @@ schema_sqlite::schema_sqlite(string &conninfo, bool no_catalog)
     WIN2(lead, inttype, inttype, inttype);
     WIN2(lead, realtype, realtype, inttype);
     WIN2(lead, texttype, texttype, inttype);
-    
+
     WIN1(first_value, inttype, inttype);
     WIN1(first_value, realtype, realtype);
     WIN1(first_value, texttype, texttype);
@@ -489,7 +489,7 @@ schema_sqlite::schema_sqlite(string &conninfo, bool no_catalog)
     WIN2(nth_value, inttype, inttype, inttype);
     WIN2(nth_value, realtype, realtype, inttype);
     WIN2(nth_value, texttype, texttype, inttype);
-    
+
     internaltype = sqltype::get("internal");
     arraytype = sqltype::get("ARRAY");
 
@@ -543,11 +543,11 @@ dut_sqlite::dut_sqlite(std::string &conninfo)
 {
     // q("PRAGMA main.auto_vacuum = 2");
     // if (register_signal == false) {
-    //     struct sigaction sa;  
-    //     memset(&sa, 0, sizeof(sa));  
-    //     sigemptyset(&sa.sa_mask);  
-    //     sa.sa_flags = SA_RESTART; 
-    //     sa.sa_handler = kill_sqlite_process;  
+    //     struct sigaction sa;
+    //     memset(&sa, 0, sizeof(sa));
+    //     sigemptyset(&sa.sa_mask);
+    //     sa.sa_flags = SA_RESTART;
+    //     sa.sa_handler = kill_sqlite_process;
     //     if (sigaction(SIGALRM, &sa, NULL)) {
     //         cerr << "sigaction error" << endl;
     //         abort();
@@ -566,7 +566,7 @@ static bool is_double(string myString, long double& result) {
     istringstream iss(myString);
     iss >> noskipws >> result; // noskipws considers leading whitespace invalid
     // Check the entire string was consumed and if either failbit or badbit is set
-    return iss.eof() && !iss.fail(); 
+    return iss.eof() && !iss.fail();
 }
 
 static string process_number_string(string str)
@@ -607,8 +607,8 @@ extern "C" int content_callback(void *data, int argc, char **argv, char **azColN
     return 0;
 }
 
-void dut_sqlite::test(const string &stmt, 
-    vector<vector<string>>* output, 
+void dut_sqlite::test(const string &stmt,
+    vector<vector<string>>* output,
     int* affected_row_num,
     vector<string>* env_setting_stmts)
 {
@@ -653,16 +653,16 @@ void dut_sqlite::test(const string &stmt,
             || regex_match(err, e_no_rowid)
             )
             throw runtime_error("sqlite3 expected error [" + err + "]");
-        
+
         throw runtime_error("sqlite3 fails [" + err + "]");
     }
-    
-    if (ret != 0) 
+
+    if (ret != 0)
         throw runtime_error("sqlite3 expected error [timeout]");
 
     if (affected_row_num)
         *affected_row_num = 1; // cannot get affected_row_num, just set it to one
-    
+
     if (output == NULL)
         return;
 
@@ -672,7 +672,7 @@ void dut_sqlite::test(const string &stmt,
     output_buffer << sql_output.rdbuf();
     sql_output.close();
     string out(output_buffer.str());
-    
+
     string item;
     vector<string> row;
     for (int i = 0; i < out.size(); i++) {
@@ -759,7 +759,7 @@ void dut_sqlite::reset_to_backup(void)
         bk_db.erase(pos, 3);
     }
     bk_db += "_bk.db";
-    
+
     if (db)
         sqlite3_close(db);
     remove(db_file.c_str());
@@ -810,7 +810,7 @@ void dut_sqlite::get_content(vector<string>& tables_name, map<string, vector<vec
     for (auto& table:tables_name) {
         vector<vector<string>> table_content;
         auto query = "SELECT * FROM " + table + " ORDER BY 1;";
-        
+
         rc = sqlite3_exec(db, query.c_str(), content_callback, (void *)&table_content, &zErrMsg);
         if (rc != SQLITE_OK) {
             auto e = std::runtime_error(zErrMsg);

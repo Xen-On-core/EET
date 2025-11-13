@@ -34,7 +34,7 @@ value_expr/const_expr.cc \
 value_expr/case_expr.cc \
 value_expr/win_funcall.cc \
 value_expr/printed_expr.cc \
-value_expr/column_reference.cc 
+value_expr/column_reference.cc
 
 BOOL_EXPR_SRC = \
 value_expr/bool_expr/comp_subquery.cc \
@@ -60,5 +60,5 @@ eet_SOURCES = relmodel.cc schema.cc dut.cc $(DUT)	 			\
 eet_LDADD = $(LIBPQXX_LIBS) $(MONETDB_MAPI_LIBS) $(BOOST_REGEX_LIB) $(POSTGRESQL_LIBS) $(BOOST_LDFLAGS) $(POSTGRESQL_LDFLAGS)
 
 # AM_LDFLAGS = -fsanitize=address
-AM_CPPFLAGS += $(BOOST_CPPFLAGS) $(LIBPQXX_CFLAGS) $(POSTGRESQL_CPPFLAGS) $(MONETDB_MAPI_CFLAGS) -Wall -Wno-sign-compare -Wextra -fPIC -g 
+AM_CPPFLAGS += $(BOOST_CPPFLAGS) $(LIBPQXX_CFLAGS) $(POSTGRESQL_CPPFLAGS) $(MONETDB_MAPI_CFLAGS) -Wall -Wno-sign-compare -Wextra -fPIC -g
 #-O0 -fsanitize=address -fno-omit-frame-pointer

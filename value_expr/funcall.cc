@@ -92,7 +92,7 @@ void funcall::accept(prod_visitor *v)
 void funcall::equivalent_transform()
 {
     value_expr::equivalent_transform();
-    
+
     if (schema::target_dbms == "clickhouse")
         return;
 
@@ -103,10 +103,10 @@ void funcall::equivalent_transform()
 void funcall::back_transform()
 {
     value_expr::back_transform();
-    
+
     if (schema::target_dbms == "clickhouse")
         return;
-    
+
     for (auto &parm : parms)
         parm->back_transform();
 }

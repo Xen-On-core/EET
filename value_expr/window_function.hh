@@ -15,6 +15,6 @@ struct window_function : value_expr
     static bool allowed(prod *pprod);
     static bool disabled;
     virtual void accept(prod_visitor *v);
-    // cannot transfer aggregate, othervwise aggregate will 
+    // cannot transfer aggregate, othervwise aggregate will
     // become other value_expr, which cause syntax error
 };

@@ -70,7 +70,7 @@ comp_subquery::comp_subquery(prod *p) : bool_expr(p), myscope(scope)
 void comp_subquery::out(std::ostream &out)
 {
     OUTPUT_EQ_BOOL_EXPR(out);
-    
+
     out << "(" << *lhs << ") " << comp_op << " ( ";
     indent(out);
     out << *target_subquery << ")";

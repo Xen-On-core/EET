@@ -1,7 +1,7 @@
 #include "qcn_cte_tester.hh"
 #include "qcn_select_tester.hh"
 
-qcn_cte_tester::qcn_cte_tester(dbms_info& info, shared_ptr<schema> schema) 
+qcn_cte_tester::qcn_cte_tester(dbms_info& info, shared_ptr<schema> schema)
 : qcn_tester(info, schema){
 
     while (1) {
@@ -9,12 +9,12 @@ qcn_cte_tester::qcn_cte_tester(dbms_info& info, shared_ptr<schema> schema)
             initial_scope.new_stmt();
             auto cte_query = make_shared<common_table_expression>((struct prod *)0, &initial_scope);
             query = cte_query;
-            
+
             ostringstream s;
             cte_query->out(s);
             original_query = s.str();
             s.clear();
-        
+
             execute_query(original_query, original_query_result);
             if (original_query_result.size() > MAX_PROCESS_ROW_NUM)
                 continue;
@@ -23,7 +23,7 @@ qcn_cte_tester::qcn_cte_tester(dbms_info& info, shared_ptr<schema> schema)
         }
         break;
     }
-    
+
     skip_one_original_execution = true;
 }
 
@@ -47,11 +47,11 @@ void qcn_cte_tester::initial_origin_and_qit_query()
     query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     auto cte_query = dynamic_pointer_cast<common_table_expression>(query);
     assert(cte_query);
     eq_transform_query(cte_query);
-    
+
     ostringstream s2;
     cte_query->out(s2);
     qit_query = s2.str();
@@ -118,9 +118,9 @@ bool qcn_cte_tester::qcn_test_without_initialization()
 void qcn_cte_tester::save_testcase(string dir)
 {
     struct stat buffer;
-    if (stat(dir.c_str(), &buffer) != 0) 
+    if (stat(dir.c_str(), &buffer) != 0)
         make_dir_error_exit(dir);
-    
+
     save_backup_file(dir, tested_dbms_info);
     save_query(dir, "cte_origin.sql", original_query);
     save_query(dir, "cte_qit.sql", qit_query);
@@ -132,13 +132,13 @@ void qcn_cte_tester::minimize_testcase()
     // just simplify predicate for now
     auto cte_query = dynamic_pointer_cast<common_table_expression>(query);
     int count = 0;
-    
+
     set_compid_for_query(cte_query, count);
-    
+
     cerr << "number of predicate component: " << count << endl;
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(cte_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(cte_query, id, tmp_comp) == false)
             continue;
 
         cout << "-----------------" << endl;
@@ -166,27 +166,27 @@ void qcn_cte_tester::minimize_testcase()
     cte_query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     eq_transform_query(cte_query);
     // now cte_query is qit query
-    
+
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(cte_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(cte_query, id, tmp_comp) == false)
             continue;
-        
+
         if (tmp_comp->is_transformed == false)
             continue;
-        
+
         cout << "-----------------" << endl;
         cout << "back transaform id: " << id << endl;
         ostringstream sb;
         tmp_comp->out(sb);
         cout << "before, qit component: " << sb.str() << endl;
         sb.clear();
-        
+
         tmp_comp->back_transform();
-        
+
         ostringstream s;
         query->out(s);
         qit_query = s.str();
@@ -216,7 +216,7 @@ void qcn_cte_tester::minimize_testcase()
 void qcn_cte_tester::set_compid_for_query(shared_ptr<common_table_expression> cte_query, int& start_id)
 {
     qcn_select_tester::set_compid_for_query(cte_query->query, start_id);
-    
+
     for (auto& query : cte_query->with_queries) {
         qcn_select_tester::set_compid_for_query(query, start_id);
     }

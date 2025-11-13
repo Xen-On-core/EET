@@ -10,7 +10,7 @@ exists_predicate::exists_predicate(prod *p) : bool_expr(p), myscope(scope)
     // it use seperated my scope, do not need to restore the refs
     if (schema::target_dbms == "clickhouse")
         scope->refs.clear();
-    
+
     // disable order and limit to make sure that exists clause can be accurately transformed to in clause
     if (d6() < 4)
     {
@@ -45,7 +45,7 @@ void exists_predicate::accept(prod_visitor *v)
 void exists_predicate::out(std::ostream &out)
 {
     OUTPUT_EQ_BOOL_EXPR(out);
-    
+
     if (is_transformed)
     {
         out << *eq_exer;
@@ -103,7 +103,7 @@ void exists_predicate::equivalent_transform()
             auto predicate = tmp1->search;
             // should use "case when p is null then false else p end". Because when p is null,
             // exists (select a from b where null) => false, but true in (select null from b) => null,
-            // the result are inconsistent. 
+            // the result are inconsistent.
             // However true in (select case when p is null then false else p end is true from b) => false,
             // the results are consistent
             auto is_null = make_shared<null_predicate>(this, predicate, true);

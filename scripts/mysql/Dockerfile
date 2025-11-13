@@ -9,7 +9,7 @@ RUN apt-get install -y vim cmake curl wget git
 
 # prepare for mysql
 RUN apt-get install -y libssl-dev g++ libncurses5-dev
-RUN apt-get install -y pkg-config bison 
+RUN apt-get install -y pkg-config bison
 RUN useradd -ms /bin/bash mysql
 WORKDIR /home/mysql
 COPY mysql_source mysql_source/
@@ -22,7 +22,7 @@ RUN mkdir build
 USER root
 WORKDIR /home/mysql/mysql_source/build
 RUN cmake -DWITH_UNIT_TESTS=OFF \
-        -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/home/mysql ../ 
+        -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/home/mysql ../
 RUN make -j$(nproc)
 # install mysql
 USER root

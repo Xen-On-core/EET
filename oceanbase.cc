@@ -77,7 +77,7 @@ static bool is_double(string myString, long double& result) {
     istringstream iss(myString);
     iss >> noskipws >> result; // noskipws considers leading whitespace invalid
     // Check the entire string was consumed and if either failbit or badbit is set
-    return iss.eof() && !iss.fail(); 
+    return iss.eof() && !iss.fail();
 }
 
 static string process_an_item(string& item)
@@ -108,14 +108,14 @@ ob_connection::ob_connection(string db, unsigned int port, string host)
     test_db = db;
     test_port = port;
     host_addr = host;
-    
+
     if (!mysql_init(&conn))
         throw std::runtime_error(string(mysql_error(&conn)) + "\nLocation: " + debug_info);
 
     // password null: blank (empty) password field
-    if (mysql_real_connect(&conn, host_addr.c_str(), "root", NULL, test_db.c_str(), test_port, NULL, 0)) 
+    if (mysql_real_connect(&conn, host_addr.c_str(), "root", NULL, test_db.c_str(), test_port, NULL, 0))
         return; // success
-    
+
     string err = mysql_error(&conn);
     if (!regex_match(err, e_unknown_database))
         throw std::runtime_error("BUG!!!" + string(mysql_error(&conn)) + "\nLocation: " + debug_info);
@@ -124,7 +124,7 @@ ob_connection::ob_connection(string db, unsigned int port, string host)
     cerr << test_db + " does not exist, use default db" << endl;
     if (!mysql_real_connect(&conn, host_addr.c_str(), "root", NULL, NULL, port, NULL, 0))
         throw std::runtime_error(string(mysql_error(&conn)) + "\nLocation: " + debug_info);
-    
+
     cerr << "create database " + test_db << endl;
     string create_sql = "create database " + test_db + "; ";
     if (mysql_real_query(&conn, create_sql.c_str(), create_sql.size())) {
@@ -140,10 +140,10 @@ ob_connection::ob_connection(string db, unsigned int port, string host)
         //     throw runtime_error("error removing directory.");
 
         // cerr << "directory removed, create the database again" << endl;
-        // if (mysql_real_query(&conn, create_sql.c_str(), create_sql.size())) 
+        // if (mysql_real_query(&conn, create_sql.c_str(), create_sql.size()))
         //     throw runtime_error(string(mysql_error(&conn)) + "\nLocation: " + debug_info);
     }
-        
+
     auto res = mysql_store_result(&conn);
     mysql_free_result(res);
 
@@ -167,10 +167,10 @@ schema_ob::schema_ob(string db, unsigned int port, string host)
     string get_table_query = "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES \
         WHERE TABLE_SCHEMA='" + db + "' AND \
               TABLE_TYPE='BASE TABLE' ORDER BY 1;";
-    
+
     if (mysql_real_query(&conn, get_table_query.c_str(), get_table_query.size()))
         throw std::runtime_error(string(mysql_error(&conn)) + "\nLocation: " + debug_info);
-    
+
     auto result = mysql_store_result(&conn);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", true, true);
@@ -183,7 +183,7 @@ schema_ob::schema_ob(string db, unsigned int port, string host)
         where table_schema='" + db + "' order by 1;";
     if (mysql_real_query(&conn, get_view_query.c_str(), get_view_query.size()))
         throw std::runtime_error(string(mysql_error(&conn)) + "\nLocation: " + debug_info);
-    
+
     result = mysql_store_result(&conn);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", false, false);
@@ -228,7 +228,7 @@ schema_ob::schema_ob(string db, unsigned int port, string host)
     realtype = sqltype::get("double");
     texttype = sqltype::get("varchar(200)");
     datetype = sqltype::get("DATETIME");
-    
+
     compound_operators.push_back("union distinct");
     compound_operators.push_back("union all");
 
@@ -400,8 +400,8 @@ schema_ob::schema_ob(string db, unsigned int port, string host)
     FUNC3(SUBSTRING, texttype, texttype, inttype, inttype);
     FUNC1(TO_BASE64, texttype, texttype);
     FUNC1(TRIM, texttype, texttype);
-    // FUNC1(UNHEX, texttype, texttype); it return a binary string, which is a different type from string. 
-    // In case when, string and binary string will become binary string 
+    // FUNC1(UNHEX, texttype, texttype); it return a binary string, which is a different type from string.
+    // In case when, string and binary string will become binary string
     FUNC1(UPPER, texttype, texttype);
     FUNC2(STRCMP, inttype, texttype, texttype);
     // FUNC1(CHAR, texttype, inttype);
@@ -471,10 +471,10 @@ void schema_ob::update_schema()
     string get_table_query = "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES \
         WHERE TABLE_SCHEMA='" + test_db + "' AND \
               TABLE_TYPE='BASE TABLE' ORDER BY 1;";
-    
+
     if (mysql_real_query(&conn, get_table_query.c_str(), get_table_query.size()))
         throw std::runtime_error(string(mysql_error(&conn)) + "\nLocation: " + debug_info);
-    
+
     auto result = mysql_store_result(&conn);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", true, true);
@@ -487,7 +487,7 @@ void schema_ob::update_schema()
         where table_schema='" + test_db + "' order by 1;";
     if (mysql_real_query(&conn, get_view_query.c_str(), get_view_query.size()))
         throw std::runtime_error(string(mysql_error(&conn)) + "\nLocation: " + debug_info);
-    
+
     result = mysql_store_result(&conn);
     while (auto row = mysql_fetch_row(result)) {
         table tab(row[0], "main", false, false);
@@ -541,8 +541,8 @@ static unsigned long long get_cur_time_ms(void) {
 	return (tv.tv_sec * 1000ULL) + tv.tv_usec / 1000;
 }
 
-void dut_ob::test(const string &stmt, 
-    vector<vector<string>>* output, 
+void dut_ob::test(const string &stmt,
+    vector<vector<string>>* output,
     int* affected_row_num,
     vector<string>* env_setting_stmts)
 {
@@ -550,14 +550,14 @@ void dut_ob::test(const string &stmt,
         for (auto& set_statement : *env_setting_stmts) {
             if (!mysql_real_query(&conn, set_statement.c_str(), stmt.size()))
                 continue; // succeed
-            
+
             string err = mysql_error(&conn);
             auto result = mysql_store_result(&conn);
             mysql_free_result(result);
             throw runtime_error("[OCEANBASE] setting error [" + err + "]");
         }
     }
-    
+
     if (mysql_real_query(&conn, stmt.c_str(), stmt.size())) {
         string err = mysql_error(&conn);
         auto result = mysql_store_result(&conn);
@@ -568,22 +568,22 @@ void dut_ob::test(const string &stmt,
             return;
         }
         if (regex_match(err, e_crash)) {
-            throw std::runtime_error("BUG!!! " + err + " in dut_ob::test"); 
+            throw std::runtime_error("BUG!!! " + err + " in dut_ob::test");
         }
         string prefix = "dut_ob::test expected error: ";
-        if (regex_match(err, e_dup_entry) 
-            || regex_match(err, e_large_results) 
-            || regex_match(err, e_timeout) 
-            || regex_match(err, e_timeout2) 
+        if (regex_match(err, e_dup_entry)
+            || regex_match(err, e_large_results)
+            || regex_match(err, e_timeout)
+            || regex_match(err, e_timeout2)
             || regex_match(err, e_col_ambiguous)
-            || regex_match(err, e_truncated) 
+            || regex_match(err, e_truncated)
             || regex_match(err, e_division_zero)
-            || regex_match(err, e_unknown_col) 
+            || regex_match(err, e_unknown_col)
             || regex_match(err, e_incorrect_args)
-            || regex_match(err, e_out_of_range) 
+            || regex_match(err, e_out_of_range)
             || regex_match(err, e_win_context)
             || regex_match(err, e_win_context2)
-            || regex_match(err, e_view_reference) 
+            || regex_match(err, e_view_reference)
             || regex_match(err, e_context_cancel)
             || regex_match(err, e_string_convert)
             // || regex_match(err, e_idx_oor)
@@ -615,7 +615,7 @@ void dut_ob::test(const string &stmt,
             throw runtime_error(prefix + err);
         }
 
-        throw std::runtime_error("[" + err + "] in dut_ob::test"); 
+        throw std::runtime_error("[" + err + "] in dut_ob::test");
     }
 
     if (affected_row_num)
@@ -631,7 +631,7 @@ void dut_ob::test(const string &stmt,
             throw runtime_error("expected error: " + err);
         }
 
-        throw std::runtime_error("[" + err + "]\nLocation: " + debug_info); 
+        throw std::runtime_error("[" + err + "]\nLocation: " + debug_info);
     }
 
     if (output && result) {
@@ -694,7 +694,7 @@ void dut_ob::backup(void)
     // int ret = system(mysql_dump.c_str());
     // if (ret != 0) {
     //     cerr << "backup fail in dut_tidb::backup!!" << endl;
-    //     throw std::runtime_error("backup fail in dut_tidb::backup"); 
+    //     throw std::runtime_error("backup fail in dut_tidb::backup");
     // }
 }
 

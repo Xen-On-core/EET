@@ -3,7 +3,7 @@
 n=1
 
 directory=$(pwd)
-if [ -e "$directory" ]; then 
+if [ -e "$directory" ]; then
     files=$(find "$directory" -mindepth 1 -type f -not -name ".*")
     if [ -n "$files" ]; then
         echo "$directory contains other files"

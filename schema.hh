@@ -117,7 +117,7 @@ struct schema {
     sqltype *datetype = NULL;
 
     std::vector<sqltype *> types;
-  
+
     std::vector<table> tables;
     std::vector<string> indexes;
     std::vector<op> operators;
@@ -156,9 +156,9 @@ struct schema {
     vector<string> supported_join_op;
     vector<string> supported_table_engine;
     map<string, vector<string>> supported_setting;
-  
+
     virtual std::string quote_name(const std::string &id) = 0;
-  
+
     void summary() {
         std::cout << "Found " << tables.size() <<
             " user table(s) in information schema." << std::endl;

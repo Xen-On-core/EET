@@ -44,7 +44,7 @@ RUN chown -R $USER_NAME /home/$USER_NAME/$TOOL_NAME
 USER $USER_NAME
 WORKDIR /home/$USER_NAME/$TOOL_NAME
 RUN autoreconf -if
-RUN ./configure 
+RUN ./configure
 RUN make clean; make -j
 
 USER root

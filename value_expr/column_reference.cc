@@ -58,13 +58,13 @@ column_reference::column_reference(prod *p, sqltype *column_type,
                                    string column_name, string table_name) : value_expr(p)
 {
     type = column_type;
-    if (schema::target_dbms == "clickhouse" 
+    if (schema::target_dbms == "clickhouse"
         && handle_table != NULL
         && table_name == handle_table->ident()) {
         reference = column_name;
     } else
         reference = table_name + "." + column_name;
-    
+
     table_ref = table_name;
 }
 

@@ -33,7 +33,7 @@ WORKDIR /root/$TOOL_NAME
 # ENV CFLAGS=""
 # ENV LDFLAGS="" # we need LDFLAGS as EET will link with sqlite3.lib, which as asan
 RUN autoreconf -if
-RUN ./configure 
+RUN ./configure
 RUN make clean; make -j
 
 WORKDIR /root

@@ -1,20 +1,20 @@
 #include "qcn_update_tester.hh"
 
-qcn_update_tester::qcn_update_tester(dbms_info& info, shared_ptr<schema> schema) 
+qcn_update_tester::qcn_update_tester(dbms_info& info, shared_ptr<schema> schema)
 : qcn_tester(info, schema){
-    
+
     while (1) {
         try {
             initial_scope.new_stmt();
             auto update_query = make_shared<update_stmt>((struct prod *)0, &initial_scope);
             query = update_query;
             table_name = update_query->victim->ident();
-            
+
             ostringstream s;
             update_query->out(s);
             original_query = s.str();
             s.clear();
-        
+
             execute_get_changed_results(original_query, table_name, original_query_result, true);
             if (original_query_result.size() > MAX_PROCESS_ROW_NUM)
                 continue;
@@ -23,24 +23,24 @@ qcn_update_tester::qcn_update_tester(dbms_info& info, shared_ptr<schema> schema)
         }
         break;
     }
-    
+
     skip_one_original_execution = true;
 }
 
 void qcn_update_tester::eq_transform_query(shared_ptr<update_stmt> update_query)
 {
-    for (auto set_value : update_query->set_list->value_exprs) 
+    for (auto set_value : update_query->set_list->value_exprs)
         set_value->equivalent_transform();
-    
+
     // transform the where clause
     update_query->search->equivalent_transform();
 }
 
 void qcn_update_tester::back_transform_query(shared_ptr<update_stmt> update_query)
 {
-    for (auto set_value : update_query->set_list->value_exprs) 
+    for (auto set_value : update_query->set_list->value_exprs)
         set_value->back_transform();
-    
+
     // transform the where clause
     update_query->search->back_transform();
 }
@@ -51,11 +51,11 @@ void qcn_update_tester::initial_origin_and_qit_query()
     query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     auto update_query = dynamic_pointer_cast<update_stmt>(query);
     assert(update_query);
     eq_transform_query(update_query);
-    
+
     ostringstream s2;
     update_query->out(s2);
     qit_query = s2.str();
@@ -96,7 +96,7 @@ bool qcn_update_tester::qcn_test_without_initialization()
 
     if (qit_query_result != original_query_result) {
         cerr << "validating the bug ... " << endl;
-        
+
         try {
             execute_get_changed_results(original_query, table_name, original_query_result, true);
             execute_get_changed_results(qit_query, table_name, qit_query_result, true);
@@ -104,7 +104,7 @@ bool qcn_update_tester::qcn_test_without_initialization()
             cerr << "error when validating: " << e.what() << endl;
             return true;
         }
-        
+
         if (qit_query_result != original_query_result) {
             cerr << "qit results are different from original results, find logical bug!!" << endl;
             cerr << "original_query_result: " << original_query_result.size() << endl;
@@ -121,9 +121,9 @@ bool qcn_update_tester::qcn_test_without_initialization()
 void qcn_update_tester::save_testcase(string dir)
 {
     struct stat buffer;
-    if (stat(dir.c_str(), &buffer) != 0) 
+    if (stat(dir.c_str(), &buffer) != 0)
         make_dir_error_exit(dir);
-    
+
     save_backup_file(dir, tested_dbms_info);
     save_query(dir, "update_origin.sql", original_query);
     save_query(dir, "update_qit.sql", qit_query);
@@ -135,13 +135,13 @@ void qcn_update_tester::minimize_testcase()
     // just simplify predicate for now
     auto update_query = dynamic_pointer_cast<update_stmt>(query);
     int count = 0;
-    
+
     set_compid_for_query(update_query, count);
-    
+
     cerr << "number of predicate component: " << count << endl;
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(update_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(update_query, id, tmp_comp) == false)
             continue;
 
         cout << "-----------------" << endl;
@@ -169,27 +169,27 @@ void qcn_update_tester::minimize_testcase()
     update_query->out(s1);
     original_query = s1.str();
     s1.clear();
-    
+
     eq_transform_query(update_query);
     // now cte_query is qit query
-    
+
     for (int id = 0; id < count; id++) {
         shared_ptr<value_expr> tmp_comp;
-        if (get_comp_from_id_query(update_query, id, tmp_comp) == false) 
+        if (get_comp_from_id_query(update_query, id, tmp_comp) == false)
             continue;
-        
+
         if (tmp_comp->is_transformed == false)
             continue;
-        
+
         cout << "-----------------" << endl;
         cout << "back transaform id: " << id << endl;
         ostringstream sb;
         tmp_comp->out(sb);
         cout << "before, qit component: " << sb.str() << endl;
         sb.clear();
-        
+
         tmp_comp->back_transform();
-        
+
         ostringstream s;
         query->out(s);
         qit_query = s.str();
@@ -218,7 +218,7 @@ void qcn_update_tester::minimize_testcase()
 
 void qcn_update_tester::set_compid_for_query(shared_ptr<update_stmt> update_query, int& start_id)
 {
-    for (auto set_value : update_query->set_list->value_exprs) 
+    for (auto set_value : update_query->set_list->value_exprs)
         set_value->set_component_id(start_id);
     update_query->search->set_component_id(start_id);
     return;
@@ -226,7 +226,7 @@ void qcn_update_tester::set_compid_for_query(shared_ptr<update_stmt> update_quer
 
 bool qcn_update_tester::get_comp_from_id_query(shared_ptr<update_stmt> update_query, int id, shared_ptr<value_expr>& ret_comp)
 {
-    for (auto set_value : update_query->set_list->value_exprs) 
+    for (auto set_value : update_query->set_list->value_exprs)
         GET_COMPONENT_FROM_ID_CHILD(id, ret_comp, set_value);
     GET_COMPONENT_FROM_ID_CHILD(id, ret_comp, update_query->search);
     return false;

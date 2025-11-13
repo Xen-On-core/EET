@@ -48,7 +48,7 @@ WORKDIR /root
 COPY $TOOL_NAME /root/$TOOL_NAME
 WORKDIR /root/$TOOL_NAME
 RUN autoreconf -if
-RUN ./configure 
+RUN ./configure
 RUN make clean; make -j
 
 WORKDIR /root

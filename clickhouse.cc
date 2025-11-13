@@ -26,7 +26,7 @@ static bool is_double(string myString, long double& result) {
     istringstream iss(myString);
     iss >> noskipws >> result; // noskipws considers leading whitespace invalid
     // Check the entire string was consumed and if either failbit or badbit is set
-    return iss.eof() && !iss.fail(); 
+    return iss.eof() && !iss.fail();
 }
 
 static string process_number_string(string str)
@@ -55,9 +55,9 @@ static string process_number_string(string str)
 // true: execute query successfully
 // false: trigger error, the error is store in err
 // if db is NULL, don't specify database
-bool execute_clickhouse_query(string* db, 
-                    int port, string query, 
-                    vector<vector<string>>* output, 
+bool execute_clickhouse_query(string* db,
+                    int port, string query,
+                    vector<vector<string>>* output,
                     string& err,
                     vector<string>* env_setting_stmts)
 {
@@ -68,19 +68,19 @@ bool execute_clickhouse_query(string* db,
     }
     ofile << query << endl;
     ofile.close();
-    
+
     string cmd = "clickhouse client ";
     cmd = cmd + " --max_execution_time " + to_string(CLICKHOUSE_TIMEOUT_SECOND);
     cmd = cmd + " --port " + to_string(port);
     if (db != NULL)
         cmd = cmd + " --database " + *db;
-    
+
     // // add it to prevent producing the duplicate bug as https://github.com/ClickHouse/ClickHouse/issues/50039 (fixed)
-    // cmd = cmd + " --compile_expressions 0"; 
+    // cmd = cmd + " --compile_expressions 0";
 
     // sometimes still undetermined even enable this options
     // cmd = cmd + " --mutations_sync 1"; // sychronize update/delete statement, otherwise undetermined results
-    
+
     // cmd = cmd + " --join_use_nulls 1"; // without it, empty cell will be filled with default value
     cmd = cmd + " --queries-file " + string(CLICKHOUSE_SQL_FILE);
     cmd = cmd + " > " + string(CLICKHOUSE_OUTPUT_FILE);
@@ -99,10 +99,10 @@ bool execute_clickhouse_query(string* db,
             err = err.substr(0, pos);
         return false;
     }
-    
+
     if (output == NULL)
         return true;
-    
+
     output->clear();
 
     ifstream sql_output(CLICKHOUSE_OUTPUT_FILE);
@@ -143,8 +143,8 @@ clickhouse_connection::clickhouse_connection(string db, int port)
 {
     test_db = db;
     test_port = port;
-    
-    // make sure clickhouse server is still alive and db is created 
+
+    // make sure clickhouse server is still alive and db is created
     string error;
     string create_sql = "create database if not exists " + test_db + ";";
     auto succeed = execute_clickhouse_query(NULL, test_port, create_sql, NULL, error, NULL);
@@ -217,12 +217,12 @@ schema_clickhouse::schema_clickhouse(string db, int port) : clickhouse_connectio
     // additional join supported by ClickHouse
     // According to https://clickhouse.com/blog/clickhouse-fully-supports-joins,
     // SEMI JOIN, ANY JOIN and ASOF JOIN will cause non-determinism.
-    // For example, A LEFT SEMI JOIN query returns column values for each row 
-    // from the left table that has at least one join key match in the 
-    // right table. Only the **first found** (undetermined) match is returned 
+    // For example, A LEFT SEMI JOIN query returns column values for each row
+    // from the left table that has at least one join key match in the
+    // right table. Only the **first found** (undetermined) match is returned
     // (the cartesian product is disabled).
-    
-    // supported_join_op.push_back("LEFT SEMI"); 
+
+    // supported_join_op.push_back("LEFT SEMI");
     // supported_join_op.push_back("RIGHT SEMI");
     // supported_join_op.push_back("LEFT ANY");
     // supported_join_op.push_back("RIGHT ANY");
@@ -248,7 +248,7 @@ schema_clickhouse::schema_clickhouse(string db, int port) : clickhouse_connectio
     supported_table_engine.push_back("TinyLog"); //doesn't support mutations (e.g. UPDATE)
 
     target_dbms = "clickhouse";
-    
+
     // Arithmetic
     BINOP(+, inttype, inttype, inttype);
     BINOP(+, realtype, realtype, realtype);
@@ -352,7 +352,7 @@ schema_clickhouse::schema_clickhouse(string db, int port) : clickhouse_connectio
     FUNC1(bin, texttype, texttype);
     FUNC1(unbin, texttype, texttype);
     FUNC1(bitmaskToList, texttype, inttype);
-    
+
     // Hash function causes a false positive: https://github.com/ClickHouse/ClickHouse/issues/50320
     // // Hash Functions
     // FUNC3(halfMD5, inttype, inttype, realtype, texttype);
@@ -601,8 +601,8 @@ schema_clickhouse::schema_clickhouse(string db, int port) : clickhouse_connectio
     generate_indexes();
 }
 
-void dut_clickhouse::test(const string &stmt, 
-                    vector<vector<string>>* output, 
+void dut_clickhouse::test(const string &stmt,
+                    vector<vector<string>>* output,
                     int* affected_row_num,
                     vector<string>* env_setting_stmts)
 {
@@ -612,7 +612,7 @@ void dut_clickhouse::test(const string &stmt,
         if (error.find("(BAD_ARGUMENTS)") != string::npos // not follow the argument scope
             || error.find("(ILLEGAL_DIVISION)") != string::npos // divided by zero
             || error.find("(NO_COMMON_TYPE)") != string::npos // here is no supertype for types UInt64, Int64
-            || error.find("(NOT_IMPLEMENTED)") != string::npos 
+            || error.find("(NOT_IMPLEMENTED)") != string::npos
             || error.find("(TIMEOUT_EXCEEDED)") != string::npos
             || error.find("(ILLEGAL_TYPE_OF_ARGUMENT)") != string::npos
             || error.find("(TYPE_MISMATCH)") != string::npos
@@ -637,7 +637,7 @@ void dut_clickhouse::test(const string &stmt,
 
     if (affected_row_num)
         *affected_row_num = 1;
-    
+
     return;
 }
 
@@ -667,9 +667,9 @@ void dut_clickhouse::backup()
 void dut_clickhouse::reset_to_backup()
 {
     reset();
-    if (access(test_backup_file.c_str(), F_OK ) == -1) 
+    if (access(test_backup_file.c_str(), F_OK ) == -1)
         throw runtime_error("CLICKHOUSE access fail in reset_to_backup");
-    
+
     string cmd = "clickhouse client ";
     cmd = cmd + " --port " + to_string(test_port);
     cmd = cmd + " --database " + test_db;
@@ -684,9 +684,9 @@ void dut_clickhouse::reset_to_backup()
     sql_error.close();
 
     auto error = string(err_buffer.str());
-    if (!error.empty()) 
+    if (!error.empty())
         throw runtime_error("CLICKHOUSE execute queries-file fail in reset_to_backup + [" + error + "]");
-    
+
     return;
 }
 
