@@ -10,6 +10,9 @@
 #include "qcn_tester/qcn_cte_tester.hh"
 #include "qcn_tester/qcn_insert_select_tester.hh"
 
+#define RYML_SINGLE_HDR_DEFINE_NOW
+#include "ryml/rapidyaml.hh"
+
 #include <thread>
 #include <chrono>
 
@@ -25,7 +28,10 @@ using boost::regex_match;
 using namespace std;
 
 #define DEFAULT_DB_TEST_TIME 50
-// #define DB_RECORD_FILE "db_setup.sql"
+
+#define ERRCODE_EMPTY_FILE 0x01
+#define ERRCODE_MEM_ALLOC_FAIL 0x02
+
 
 unsigned long long test_start_timestamp_ms = 0;
 unsigned long long dbms_execution_ms = 0;
@@ -53,6 +59,37 @@ void print_output_to_file(multiset<vector<string>> &output, string filename)
         ofile << "\n";
     }
     ofile.close();
+}
+
+int read_config(map<string,string> &options)
+{
+    ifstream file("config.yml");
+
+    if (!file.is_open()) {
+        cerr << "Failed to open file: " << "config.yml" << endl;
+        return 1;
+    }
+
+    string buff(
+        (istreambuf_iterator<char>(file)),
+        istreambuf_iterator<char>()
+    );
+    file.close();
+
+    ryml::Tree conftree = ryml::parse_in_place(ryml::to_substr(buff));
+    if (conftree.empty()) {
+        std::cout << "Empty YAML file" << std::endl;
+        return ERRCODE_EMPTY_FILE;
+    }
+
+    ryml::ConstNodeRef root = conftree.rootref();
+
+    options["dbms"] = std::string(conftree["dbms"].val().str, conftree["dbms"].val().len);
+    options["path"] = std::string(conftree["path"].val().str, conftree["path"].val().len);
+    options["port"] = std::string(conftree["port"].val().str, conftree["port"].val().len);
+    options["database"] = std::string(conftree["database"].val().str, conftree["database"].val().len);
+
+    return 0;
 }
 
 void minimize_qcn_database(shared_ptr<qcn_tester> qcn,
@@ -169,6 +206,40 @@ void minimize_qcn_database(shared_ptr<qcn_tester> qcn,
     return;
 }
 
+void help() {
+    cout <<
+        "   --postgres-db=connstr  Postgres database to send queries to, should used with --postgres-port" <<endl <<
+        "   --postgres-port=int    Postgres server port number, should used with --postgres-db" <<endl <<
+        "   --postgres-path=str    Postgres server instalation path (default is '/usr/local/pgsql')" <<endl <<
+#ifdef HAVE_LIBSQLITE3
+        "   --sqlite=URI           SQLite database to send queries to" << endl <<
+#endif
+#ifdef HAVE_LIBMYSQLCLIENT
+        "   --mysql-db=constr       MySQL database to send queries to, should be used with mysql-port" << endl <<
+        "   --mysql-port=int        MySQL server port number, should be used with mysql-db" << endl <<
+        "   --tidb-db=constr        tidb database name to send queries to (should used with" << endl <<
+        "   --tidb-port=int         tidb server port number" << endl <<
+        "   --oceanbase-db=constr      OceanBase database name to send queries to " << endl <<
+        "   --oceanbase-port=int       OceanBase server port number" << endl <<
+        "   --oceanbase-host=constr    OceanBase server host address" << endl <<
+#endif
+        "   --clickhouse-db=constr    ClickHouse tested database" << endl <<
+        "   --clickhouse-port=int     ClickHouse server port number" << endl <<
+        "   --cockroach-db=constr       CockroachDB tested database" << endl <<
+        "   --cockroach-port=int        CockroachDB server port number" << endl <<
+        "   --cockroach-host=constr     CockroachDB server host address" << endl <<
+        "   --yugabyte-db=constr       YugaByte tested database" << endl <<
+        "   --yugabyte-port=int        YugaByte server port number" << endl <<
+        "   --yugabyte-host=constr     YugaByte server host address" << endl <<
+        "   --db-test-num=int       number of qcn tests for each generated database" << endl <<
+        "   --db-table-num=int      number of tables for each generated database" << endl <<
+        "   --seed=int              seed RNG with specified int instead of PID" << endl <<
+        "   --cpu-affinity=int      set cpu affinity of qcn and its child process to specific CPU" << endl <<
+        "   --ignore-crash          ignore crash bug, the fuzzer will not stop when it finds crash issues" << endl <<
+        "   --help                  print available command line options and exit" << endl;
+        return;
+}
+
 int cpu_affinity = -1;
 
 int main(int argc, char *argv[]) {
@@ -195,6 +266,8 @@ tidb-db|tidb-port|\
 mysql-db|mysql-port|\
 oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
 
+    read_config(options);
+
     for(char **opt = argv + 1 ;opt < argv + argc; opt++) {
         smatch match;
         string s(*opt);
@@ -206,37 +279,8 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
         }
     }
 
-    if (options.count("help")) {
-        cerr <<
-        "    --postgres-db=connstr  Postgres database to send queries to, should used with --postgres-port" <<endl <<
-        "    --postgres-port=int    Postgres server port number, should used with --postgres-db" <<endl <<
-        "    --postgres-path=str    Postgres server instalation path (default is '/usr/local/pgsql')" <<endl <<
-#ifdef HAVE_LIBSQLITE3
-        "    --sqlite=URI           SQLite database to send queries to" << endl <<
-#endif
-#ifdef HAVE_LIBMYSQLCLIENT
-        "    --mysql-db=constr      MySQL database to send queries to, should be used with mysql-port" << endl <<
-        "    --mysql-port=int       MySQL server port number, should be used with mysql-db" << endl <<
-        "    --tidb-db=constr   tidb database name to send queries to (should used with" << endl <<
-        "    --tidb-port=int    tidb server port number" << endl <<
-        "    --oceanbase-db=constr      OceanBase database name to send queries to " << endl <<
-        "    --oceanbase-port=int       OceanBase server port number" << endl <<
-        "    --oceanbase-host=constr    OceanBase server host address" << endl <<
-#endif
-        "    --clickhouse-db=constr    ClickHouse tested database" << endl <<
-        "    --clickhouse-port=int     ClickHouse server port number" << endl <<
-        "    --cockroach-db=constr       CockroachDB tested database" << endl <<
-        "    --cockroach-port=int        CockroachDB server port number" << endl <<
-        "    --cockroach-host=constr     CockroachDB server host address" << endl <<
-        "    --yugabyte-db=constr       YugaByte tested database" << endl <<
-        "    --yugabyte-port=int        YugaByte server port number" << endl <<
-        "    --yugabyte-host=constr     YugaByte server host address" << endl <<
-        "    --db-test-num=int      number of qcn tests for each generated database" << endl <<
-        "    --db-table-num=int      number of tables for each generated database" << endl <<
-        "    --seed=int             seed RNG with specified int instead of PID" << endl <<
-        "    --cpu-affinity=int     set cpu affinity of qcn and its child process to specific CPU" << endl <<
-        "    --ignore-crash         ignore crash bug, the fuzzer will not stop when it finds crash issues" << endl <<
-        "    --help                 print available command line options and exit" << endl;
+    if (options.count("help") || options.size()==0) {
+        help();
         return 0;
     }
 
@@ -273,7 +317,8 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
     }
 
     int round = 0;
-    while (1) {
+    int seedopt = options.count("seed");
+    while (true) {
         cerr << "round " << round << " ... " << endl;
         round++;
         auto qcn_test_pid = fork();
@@ -283,10 +328,8 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
             cerr << "running on CPU core " << sched_getcpu() << " ... " << endl;
 
             // seed must set in the child process, otherwise the child always generate the same statement
-            // smith::rng.seed(options.count("seed") ? stoi(options["seed"]) : time(NULL));
             random_device rd;
-            auto rand_seed = rd();
-            // rand_seed = 212331246;
+            auto rand_seed = seedopt ? stoi(options["seed"]) : rd();
             cerr << "random seed: " << rand_seed << " ... " << endl;
             smith::rng.seed(rand_seed);
 
@@ -296,13 +339,12 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
                 try {
                     generate_database(d_info, table_num);
                     break;
-                } catch (exception &e) { // if fails, just try again
+                } catch (exception &e) {
                     string err = e.what();
                     bool expected = (err.find("expected error") != string::npos) || (err.find("timeout") != string::npos);
                     if (!expected) {
                         cerr << "unexpected error generated from generate_database: " << err << endl;
-                        // cerr << "cannot save backup as generating db is not finished"<< endl;
-                        abort(); // stop if trigger unexpected error
+                        abort();
                     }
                     rand_seed = rd();
                     cerr << "random seed: " << rand_seed << " ... " << endl;
@@ -396,7 +438,7 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
             close(pipefd[1]);
             exit(EXIT_SUCCESS);
         }
-        // close(pipefd[1]);  // Close unused write end
+
         int status;
         auto res = waitpid(qcn_test_pid, &status, 0);
         if (res <= 0) {
@@ -407,7 +449,7 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
             cerr << "trigger a logic bug!! abort" << endl;
             abort();
         }
-        // ignore memory issue currently
+
         if (WIFSIGNALED(status)) {
             cerr << "trigger a memory bug!! the server might be crashed" << endl;
             auto signal_num = WTERMSIG(status);
@@ -430,7 +472,7 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
             std::cerr << "Not all bytes read. Expected: " << sizeof(dbms_execution_ms) << ", Read: " << bytes_read << std::endl;
             exit(EXIT_FAILURE);
         }
-        // close(pipefd[0]);
+
         executed_test_num = executed_test_num + db_test_time;
         print_test_time_info();
         cerr << "done" << endl;
