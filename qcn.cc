@@ -27,18 +27,20 @@ using boost::regex_match;
 
 using namespace std;
 
-#define DEFAULT_DB_TEST_TIME 50
+#define DEFAULT_TEST_NUM 50
 
 #define ERRCODE_EMPTY_FILE 0x01
 #define ERRCODE_MEM_ALLOC_FAIL 0x02
+#define ERRCODE_INVALID_CONFIG 0x03
 
 
 unsigned long long test_start_timestamp_ms = 0;
 unsigned long long dbms_execution_ms = 0;
 int executed_test_num = 0;
+typedef unsigned long long ull;
 
 void print_test_time_info() {
-    auto now = get_cur_time_ms();
+    ull now = get_cur_time_ms();
     double test_time_s = 1.0 * (now - test_start_timestamp_ms) / 1000;
     cout << "testing time: " << test_time_s << "s" << endl;
     double dbms_execution_s = 1.0 * dbms_execution_ms / 1000;
@@ -61,6 +63,31 @@ void print_output_to_file(multiset<vector<string>> &output, string filename)
     ofile.close();
 }
 
+void read_clp(map<string,string> &options, int argc, char *argv[]) {
+    regex optregex("--\
+(help|db-test-num|db-table-num|seed|cpu-affinity|\
+ignore-crash|\
+sqlite|\
+postgres-db|postgres-port|postgres-path|\
+cockroach-db|cockroach-port|cockroach-host|\
+yugabyte-db|yugabyte-port|yugabyte-host|\
+clickhouse-db|clickhouse-port|\
+tidb-db|tidb-port|\
+mysql-db|mysql-port|\
+oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
+
+    for(char **opt = argv + 1 ;opt < argv + argc; opt++) {
+        smatch match;
+        string s(*opt);
+        if (regex_match(s, match, optregex)) {
+            options[string(match[1])] = match[2];
+        } else {
+            cerr << "Cannot parse option: " << *opt << endl;
+            options["help"] = "";
+        }
+    }
+}
+
 int read_config(map<string,string> &options)
 {
     ifstream file("config.yml");
@@ -78,16 +105,25 @@ int read_config(map<string,string> &options)
 
     ryml::Tree conftree = ryml::parse_in_place(ryml::to_substr(buff));
     if (conftree.empty()) {
-        std::cout << "Empty YAML file" << std::endl;
+        cout << "Empty YAML file" << endl;
         return ERRCODE_EMPTY_FILE;
     }
 
-    ryml::ConstNodeRef root = conftree.rootref();
+    if (conftree.rootref().has_child(ryml::to_csubstr("dbms")))
+        options["dbms"] = string(conftree["dbms"].val().str, conftree["dbms"].val().len);
+    if (conftree.rootref().has_child(ryml::to_csubstr("path")))
+        options["path"] = string(conftree["path"].val().str, conftree["path"].val().len);
+    if (conftree.rootref().has_child(ryml::to_csubstr("port")))
+        options["port"] = string(conftree["port"].val().str, conftree["port"].val().len);
+    if (conftree.rootref().has_child(ryml::to_csubstr("database")))
+        options["database"] = string(conftree["database"].val().str, conftree["database"].val().len);
+    if (conftree.rootref().has_child(ryml::to_csubstr("db-test-num")))
+        options["db-test-num"] = string(conftree["db-test-num"].val().str, conftree["db-test-num"].val().len);
+    if (conftree.rootref().has_child(ryml::to_csubstr("db-table-num")))
+        options["db-table-num"] = string(conftree["db-table-num"].val().str, conftree["db-table-num"].val().len);
 
-    options["dbms"] = std::string(conftree["dbms"].val().str, conftree["dbms"].val().len);
-    options["path"] = std::string(conftree["path"].val().str, conftree["path"].val().len);
-    options["port"] = std::string(conftree["port"].val().str, conftree["port"].val().len);
-    options["database"] = std::string(conftree["database"].val().str, conftree["database"].val().len);
+    cout << options.count("db-test-num") << endl;
+    cout << options.count("db-table-num") << endl;
 
     return 0;
 }
@@ -103,18 +139,18 @@ void minimize_qcn_database(shared_ptr<qcn_tester> qcn,
     stringstream buffer;
     buffer << stmt_file.rdbuf();
     stmt_file.close();
-    auto tmp_ignore_crash = qcn->ignore_crash;
+    bool tmp_ignore_crash = qcn->ignore_crash;
     qcn->ignore_crash = true;
 
     string stmts(buffer.str());
     int old_off = 0;
     string seperate_label = ";\n";
     while (1) {
-        auto new_off = stmts.find(seperate_label, old_off);
+        size_t new_off = stmts.find(seperate_label, old_off);
         if (new_off == string::npos)
             break;
 
-        auto each_sql = stmts.substr(old_off, new_off - old_off); // not include the seperate_label
+        string each_sql = stmts.substr(old_off, new_off - old_off); // not include the seperate_label
         old_off = new_off + seperate_label.size();
 
         stmt_queue.push_back(each_sql + ";");
@@ -122,7 +158,7 @@ void minimize_qcn_database(shared_ptr<qcn_tester> qcn,
 
     for (int i = stmt_queue.size() - 1; i >= 0; i--) {
         // remove one stmt
-        auto removed_stmt = stmt_queue[i];
+        string removed_stmt = stmt_queue[i];
         stmt_queue.erase(stmt_queue.begin() + i);
         cout << "-----------------" << endl;
         cout << "trying to remove stmt: " << removed_stmt << endl;
@@ -243,6 +279,12 @@ void help() {
 int cpu_affinity = -1;
 
 int main(int argc, char *argv[]) {
+    int table_num = 0;
+    int db_test_num = DEFAULT_TEST_NUM;
+    bool verbose = false;
+    int round = 0;
+    int seedopt = 0;
+
     test_start_timestamp_ms = get_cur_time_ms();
 
     // pipefd for process communication
@@ -254,35 +296,20 @@ int main(int argc, char *argv[]) {
 
     // analyze the options
     map<string,string> options;
-    regex optregex("--\
-(help|db-test-num|db-table-num|seed|cpu-affinity|\
-ignore-crash|\
-sqlite|\
-postgres-db|postgres-port|postgres-path|\
-cockroach-db|cockroach-port|cockroach-host|\
-yugabyte-db|yugabyte-port|yugabyte-host|\
-clickhouse-db|clickhouse-port|\
-tidb-db|tidb-port|\
-mysql-db|mysql-port|\
-oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
 
     read_config(options);
-
-    for(char **opt = argv + 1 ;opt < argv + argc; opt++) {
-        smatch match;
-        string s(*opt);
-        if (regex_match(s, match, optregex)) {
-            options[string(match[1])] = match[2];
-        } else {
-            cerr << "Cannot parse option: " << *opt << endl;
-            options["help"] = "";
-        }
-    }
+    read_clp(options, argc, argv);
 
     if (options.count("help") || options.size()==0) {
         help();
         return 0;
+    } else if (!options.count("dbms")) {
+        cerr << "You need to specify DBMS for tests!" << endl;
+        return ERRCODE_INVALID_CONFIG;
     }
+
+    if (!options.count("database"))
+        options["database"] = "testdb";
 
     dbms_info d_info(options);
     cerr << "-------------Test Info------------" << endl;
@@ -293,17 +320,20 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
     cerr << "Test host: " << d_info.host_addr << endl;
     cerr << "----------------------------------" << endl;
 
-    int db_test_time = DEFAULT_DB_TEST_TIME;
     if (options.count("db-test-num") > 0)
-        db_test_time = stoi(options["db-test-num"]);
+        db_test_num = stoi(options["db-test-num"]);
 
-    int table_num = 0;
     if (options.count("db-table-num") > 0)
         table_num = stoi(options["db-table-num"]);
 
-    cpu_affinity = -1;
     if (options.count("cpu-affinity") > 0)
         cpu_affinity = stoi(options["cpu-affinity"]);
+
+    if (options.count("seed") > 0)
+        seedopt = stoi(options["seed"]);
+
+    if (options.count("vebose") > 0 && stoi(options["verbose"]) > 0)
+        verbose = true;
 
     if (cpu_affinity >= 0) {
         cpu_set_t cpuset;
@@ -316,25 +346,20 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
         }
     }
 
-    int round = 0;
-    int seedopt = options.count("seed");
     while (true) {
-        cerr << "round " << round << " ... " << endl;
+        cout << "round " << round << " ... " << endl;
         round++;
-        auto qcn_test_pid = fork();
+        pid_t qcn_test_pid = fork();
         if (qcn_test_pid == 0) {
             close(pipefd[0]);  // Close unused read end
 
-            cerr << "running on CPU core " << sched_getcpu() << " ... " << endl;
+            cout << "running on CPU core " << sched_getcpu() << " ... " << endl;
 
-            // seed must set in the child process, otherwise the child always generate the same statement
             random_device rd;
-            auto rand_seed = seedopt ? stoi(options["seed"]) : rd();
-            cerr << "random seed: " << rand_seed << " ... " << endl;
+            uint rand_seed = seedopt ? seedopt : rd();
+            cout << "random seed: " << rand_seed << " ... " << endl;
             smith::rng.seed(rand_seed);
 
-            // don't need to restart server
-            // fork_if_server_closed(d_info);
             while (true) {
                 try {
                     generate_database(d_info, table_num);
@@ -347,17 +372,17 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
                         abort();
                     }
                     rand_seed = rd();
-                    cerr << "random seed: " << rand_seed << " ... " << endl;
+                    cout << "random seed: " << rand_seed << " ... " << endl;
                     smith::rng.seed(rand_seed);
                     continue;
                 }
             }
-            cerr << "have generated db ... " << endl;
+            cout << "have generated db ... " << endl;
             print_test_time_info();
 
-            auto db_schema = get_schema(d_info);
-            for (int i = 0; i < db_test_time; i++) {
-                cerr << "[" << i << "]" << endl;
+            shared_ptr<schema> db_schema = get_schema(d_info);
+            for (int i = 0; i < db_test_num; i++) {
+                cout << "[" << i << "]" << endl;
                 shared_ptr<qcn_tester> qcn;
                 int choices;
                 if (db_schema->target_dbms == "clickhouse")
@@ -365,29 +390,28 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
                 else
                     choices = 12;
 
-                auto choice = dx(choices);
+                int choice = dx(choices);
                 if (choice <= 3) {
-                    cerr << "qcn_select_tester" << endl;
+                    cout << "qcn_select_tester" << endl;
                     qcn = make_shared<qcn_select_tester>(d_info, db_schema);
                 }
                 else if (choice <= 6) {
-                    cerr << "qcn_cte_tester" << endl;
+                    cout << "qcn_cte_tester" << endl;
                     qcn = make_shared<qcn_cte_tester>(d_info, db_schema);
                 }
                 else if (choice <= 9) {
-                    cerr << "qcn_update_tester" << endl;
+                    cout << "qcn_update_tester" << endl;
                     qcn = make_shared<qcn_update_tester>(d_info, db_schema);
                 }
                 else {
-                // else if (choice <= 12) {
-                    cerr << "qcn_delete_tester" << endl;
+                    cout << "qcn_delete_tester" << endl;
                     qcn = make_shared<qcn_delete_tester>(d_info, db_schema);
                 }
-                if (options.count("ignore-crash") > 0) {
-                    qcn->ignore_crash = true;
-                }
 
-                cerr << "start test" << endl;
+                if (options.count("ignore-crash") > 0)
+                    qcn->ignore_crash = true;
+
+                cout << "start test" << endl;
                 if (qcn->qcn_test() == false) {
                     cerr << "LOGIC BUG!!! DBMS produces incorrect results" << endl;
                     save_backup_file(".", d_info);
@@ -399,12 +423,14 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
                     qcn->qcn_test_without_initialization(); // get latest results
                     qcn->save_testcase("minimized");
 
-                    // cerr << "origin output:" << endl;
-                    // qcn->print_stmt_output(qcn->original_query_result);
-                    // cerr << "qit output:" << endl;
-                    // qcn->print_stmt_output(qcn->qit_query_result);
-                    // qcn->print_origin_qit_difference();
-
+                    if (verbose) {
+                        cerr << "origin output:" << endl;
+                        qcn->print_stmt_output(qcn->original_query_result);
+                        cerr << "qit output:" << endl;
+                        qcn->print_stmt_output(qcn->qit_query_result);
+                        qcn->print_origin_qit_difference();
+                    }
+                    
                     // reduce database
                     multiset<vector<string>> min_origin_result = qcn->original_query_result;
                     multiset<vector<string>> min_qit_result = qcn->qit_query_result;
@@ -418,21 +444,13 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
                 }
                 executed_test_num ++;
                 print_test_time_info();
-                // // used for checking statement results
-                // cerr << "qit_query_result: " << endl;
-                // for (auto& row : qcn->qit_query_result) {
-                //     for (auto& item : row)
-                //         cerr << item << " ";
-                //     cerr << endl;
-                // }
-                // exit(EXIT_FAILURE);
             }
             ssize_t bytes_written = write(pipefd[1], &dbms_execution_ms, sizeof(dbms_execution_ms));
             if (bytes_written == -1) {
                 perror("write");
                 exit(EXIT_FAILURE);
             } else if (bytes_written != sizeof(dbms_execution_ms)) {
-                std::cerr << "Not all bytes written. Expected: " << sizeof(dbms_execution_ms) << ", Written: " << bytes_written << std::endl;
+                cerr << "Not all bytes written. Expected: " << sizeof(dbms_execution_ms) << ", Written: " << bytes_written << endl;
                 exit(EXIT_FAILURE);
             }
             close(pipefd[1]);
@@ -440,7 +458,7 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
         }
 
         int status;
-        auto res = waitpid(qcn_test_pid, &status, 0);
+        pid_t res = waitpid(qcn_test_pid, &status, 0);
         if (res <= 0) {
             cerr << "main waitpid() fail: " <<  res << endl;
             abort();
@@ -452,7 +470,7 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
 
         if (WIFSIGNALED(status)) {
             cerr << "trigger a memory bug!! the server might be crashed" << endl;
-            auto signal_num = WTERMSIG(status);
+            int signal_num = WTERMSIG(status);
             cerr << "signal: " << signal_num << endl;
             cerr << "signal info: " << strsignal(signal_num) << endl;
             if (options.count("ignore-crash") > 0) {
@@ -469,11 +487,11 @@ oceanbase-db|oceanbase-port|oceanbase-host)(?:=((?:.|\n)*))?");
             perror("read");
             exit(EXIT_FAILURE);
         } else if (bytes_read != sizeof(dbms_execution_ms)) {
-            std::cerr << "Not all bytes read. Expected: " << sizeof(dbms_execution_ms) << ", Read: " << bytes_read << std::endl;
+            cerr << "Not all bytes read. Expected: " << sizeof(dbms_execution_ms) << ", Read: " << bytes_read << endl;
             exit(EXIT_FAILURE);
         }
 
-        executed_test_num = executed_test_num + db_test_time;
+        executed_test_num = executed_test_num + db_test_num;
         print_test_time_info();
         cerr << "done" << endl;
     }

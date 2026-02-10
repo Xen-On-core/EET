@@ -1,0 +1,4 @@
+dbms: postgres
+path: /tmp/inst/
+port: 5432
+database: testdb
